@@ -1,0 +1,65 @@
+{
+  "periods": [
+    { "date": "2023-12-31", "type": "Audited", "months": 12 },
+    { "date": "2022-12-31", "type": "Audited", "months": 12 }
+  ],
+  "sections": [
+    {
+      "title": "A. Cash flow from operating activities",
+      "rows": [
+        { "label": "Net Profit / (Loss) before exceptional and extraordinary items and tax", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [8144.61, 11249.42], "key": "cf_pbt" },
+        { "label": "Adjustments for:", "indent": 1, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "cf_adj_hdr" },
+        { "label": "Depreciation", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [343.22, 351.38], "key": "cf_dep" },
+        { "label": "Amortization", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [11.30, 3.22], "key": "cf_amort" },
+        { "label": "Net loss on foreign currency transactions", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [1383.89, 2386.85], "key": "cf_fx_loss" },
+        { "label": "Provision for doubtful receivables (net)", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [3480.95, 2967.14], "key": "cf_prov" },
+        { "label": "Interest expense on other Borrowings", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [10688.42, 6254.23], "key": "cf_int_exp" },
+        { "label": "Other Finance Cost", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [1216.83, 637.06], "key": "cf_other_fin" },
+        { "label": "Operating Profit before adjustments and Working Capital Changes", "indent": 1, "isHeader": false, "isTotal": true, "isEditable": false, "values": [25269.22, 23849.30], "key": "cf_op_profit_adj" },
+        { "label": "Interest income", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [521.90, 198.26], "key": "cf_int_inc" },
+        { "label": "Profit on sale of Fixed assets", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [26.69, -0.10], "key": "cf_ppe_profit" },
+        { "label": "Operating profit before working capital changes", "indent": 1, "isHeader": false, "isTotal": true, "isEditable": false, "values": [24720.63, 23651.14], "key": "cf_op_profit_wc" },
+        { "label": "Changes in working capital:", "indent": 1, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "cf_wc_hdr" },
+        { "label": "Trade receivables", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [139.23, -183.08], "key": "cf_trade_recv" },
+        { "label": "Short-term loans and advances", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-12554.88, -74958.85], "key": "cf_st_loans" },
+        { "label": "Other Current assets", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-947.32, -899.62], "key": "cf_other_ca" },
+        { "label": "Trade payables", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-1577.67, 2623.72], "key": "cf_trade_pay" },
+        { "label": "Other Current liabilities", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-397.31, 1939.55], "key": "cf_other_cl" },
+        { "label": "Net income tax (paid) / refunds", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-2872.17, -4771.21], "key": "cf_tax_paid" },
+        { "label": "Net cash flow from operating activities (A)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [6510.51, -52598.35], "key": "cf_net_ops" }
+      ]
+    },
+    {
+      "title": "B. Cash flow from investing activities",
+      "rows": [
+        { "label": "Proceeds from sale of Tangible assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-362.91, -1134.23], "key": "cf_tangible_sale" },
+        { "label": "Proceeds from sale of Intangible assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-136.00, -3.22], "key": "cf_intangible_sale" },
+        { "label": "Proceeds from sale / (Purchase) of other Fixed Assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [534.40, -534.40], "key": "cf_other_fa" },
+        { "label": "Profit / (Loss) on sale of Fixed Assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [26.69, -0.10], "key": "cf_fa_pl" },
+        { "label": "Sale / (Purchase) of Current investments", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-25671.88, -14304.50], "key": "cf_current_inv" },
+        { "label": "Interest received from Investments", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [521.90, 198.26], "key": "cf_inv_interest" },
+        { "label": "Net loss on foreign currency transactions", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-1383.89, -2386.85], "key": "cf_inv_fx" },
+        { "label": "Net cash flow from investing activities (B)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [-26471.69, -18165.04], "key": "cf_net_inv" }
+      ]
+    },
+    {
+      "title": "C. Cash flow from financing activities",
+      "rows": [
+        { "label": "Proceeds from issue of equity shares", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 20.00], "key": "cf_equity_issue" },
+        { "label": "Proceeds from Security Premium", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 580.00], "key": "cf_sec_premium" },
+        { "label": "Proceeds from / (Repayment of) Short-term borrowings", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [33835.53, 70661.28], "key": "cf_st_borrow" },
+        { "label": "Interest expense on other Borrowings", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-10688.42, -6254.23], "key": "cf_fin_int" },
+        { "label": "Other Finance Cost", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [-1216.83, -637.06], "key": "cf_fin_other" },
+        { "label": "Net cash flow from financing activities (C)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [21930.28, 64369.99], "key": "cf_net_fin" }
+      ]
+    },
+    {
+      "title": "Summary",
+      "rows": [
+        { "label": "Net increase / (decrease) in Cash and cash equivalents (A+B+C)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [1969.10, -6393.40], "key": "cf_net_change" },
+        { "label": "Cash and cash equivalents at the beginning of the year", "indent": 0, "isHeader": false, "isTotal": false, "isEditable": true, "values": [8043.45, 14436.85], "key": "cf_opening" },
+        { "label": "Cash and cash equivalents at the end of the year", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [10012.55, 8043.45], "key": "cf_closing" }
+      ]
+    }
+  ]
+}

@@ -1,65 +1,67 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useApp } from '@/context/AppContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Shield, UserCheck, ClipboardCheck } from 'lucide-react';
+
+export default function LoginPage() {
+  const { user, login } = useApp();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) router.push('/dashboard');
+  }, [user, router]);
+
+  const handleLogin = (role: 'analyst' | 'approver') => {
+    login(role);
+    router.push('/dashboard');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-[#00264d] via-[#003366] to-[#004d99] flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-md w-full mx-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#003366] rounded-xl mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#003366]">NCBA Risk Platform</h1>
+          <p className="text-sm text-gray-500 mt-1">NBFI Financial Statement Assessment</p>
+          <p className="text-[10px] text-gray-400 mt-1">Powered by Kaleidofin</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500 text-center mb-4 uppercase tracking-wider font-medium">Select your role to continue</p>
+
+          <button
+            onClick={() => handleLogin('analyst')}
+            className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#003366] hover:bg-blue-50 transition-all group"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-[#003366] transition-colors">
+              <UserCheck className="w-6 h-6 text-[#003366] group-hover:text-white transition-colors" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-gray-800">Sarah Kimani</p>
+              <p className="text-xs text-gray-500">Credit Analyst</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleLogin('approver')}
+            className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-[#003366] hover:bg-blue-50 transition-all group"
           >
-            Documentation
-          </a>
+            <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-[#003366] transition-colors">
+              <ClipboardCheck className="w-6 h-6 text-green-700 group-hover:text-white transition-colors" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-gray-800">James Ochieng</p>
+              <p className="text-xs text-gray-500">Senior Approver</p>
+            </div>
+          </button>
         </div>
-      </main>
+
+        <p className="text-[10px] text-gray-400 text-center mt-8">Demo Environment &middot; No authentication required</p>
+      </div>
     </div>
   );
 }

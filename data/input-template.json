@@ -1,0 +1,75 @@
+{
+  "orgName": "Sample NBFI Ltd",
+  "periods": [
+    { "date": "2023-12-31", "type": "Audited", "months": 12 },
+    { "date": "2022-12-31", "type": "Audited", "months": 12 }
+  ],
+  "partA": {
+    "balanceSheet": {
+      "title": "1. BALANCE SHEET FORMAT",
+      "rows": [
+        { "label": "EQUITY AND LIABILITIES", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "eq_liab_header" },
+        { "label": "Shareholders' funds", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "shareholders_header" },
+        { "label": "(a) Share capital / Partner's Funds", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [20, 20], "key": "share_capital_a" },
+        { "label": "(b) Reserves and surplus", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [28243.38, 25548.38], "key": "reserves_surplus_a" },
+        { "label": "(c) Money received against share warrants", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "share_warrants_a" },
+        { "label": "Share application money pending allotment", "indent": 0, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "share_app_money" },
+        { "label": "Non-current liabilities", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "non_current_liab_header" },
+        { "label": "(a) Long-term borrowings", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "lt_borrowings_a" },
+        { "label": "(b) Deferred tax liabilities (net)", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "deferred_tax_liab_a" },
+        { "label": "(c) Other long term liabilities", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "other_lt_liab_a" },
+        { "label": "(d) Long term provisions", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "lt_provisions_a" },
+        { "label": "Current liabilities", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "current_liab_header" },
+        { "label": "(a) Short-term borrowings", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [104496.81, 70661.28], "key": "st_borrowings_a" },
+        { "label": "(b) Trade payables", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [1046.05, 2623.72], "key": "trade_payables_a" },
+        { "label": "(c) Other current liabilities", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [1542.24, 1939.55], "key": "other_current_liab_a" },
+        { "label": "(d) Short-term provisions", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "st_provisions_a" },
+        { "label": "TOTAL", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [135348.48, 100792.93], "key": "total_eq_liab" },
+        { "label": "ASSETS", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "assets_header" },
+        { "label": "Non-current assets", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "non_current_assets_header" },
+        { "label": "(a) Fixed assets", "indent": 1, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "fixed_assets_header" },
+        { "label": "(i) Tangible assets", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [802.54, 782.85], "key": "tangible_assets_a" },
+        { "label": "(ii) Intangible assets", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [124.70, 0], "key": "intangible_assets_a" },
+        { "label": "(iii) Capital work-in progress", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 534.40], "key": "cwip_a" },
+        { "label": "(iv) Intangible assets under development", "indent": 2, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "intangible_dev_a" },
+        { "label": "(b) Non Current Investments", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "non_current_inv_a" },
+        { "label": "(c) Deferred tax assets (net)", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [2142.10, 1784.08], "key": "deferred_tax_asset_a" },
+        { "label": "(d) Long-term loans and advances", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "lt_loans_a" },
+        { "label": "(e) Other non-current assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "other_non_current_a" },
+        { "label": "Current assets", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "current_assets_header" },
+        { "label": "(a) Current investments", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [40528.70, 14856.82], "key": "current_inv_a" },
+        { "label": "(b) Inventories", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "inventories_a" },
+        { "label": "(c) Trade receivables / Sundry Debtors", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [3764.22, 3903.45], "key": "trade_recv_a" },
+        { "label": "(d) Cash and cash equivalents", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [3605.17, 8043.45], "key": "cash_equiv_a" },
+        { "label": "(e) Short-term loans and advances", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [81381.05, 68826.17], "key": "st_loans_a" },
+        { "label": "(f) Other current assets", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [3000.00, 2061.71], "key": "other_current_assets_a" },
+        { "label": "TOTAL", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [135348.48, 100792.93], "key": "total_assets" }
+      ]
+    },
+    "profitAndLoss": {
+      "title": "2. PROFIT AND LOSS ACCOUNT FORMAT",
+      "rows": [
+        { "label": "Revenue from operations", "indent": 0, "isHeader": false, "isTotal": false, "isEditable": true, "values": [48450.25, 38245.12], "key": "revenue_ops" },
+        { "label": "Other Income", "indent": 0, "isHeader": false, "isTotal": false, "isEditable": true, "values": [934.75, 412.30], "key": "other_income_pl" },
+        { "label": "Total Revenue (I+II)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [49385.00, 38657.42], "key": "total_revenue_pl" },
+        { "label": "Expenses", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "expenses_header" },
+        { "label": "Employee benefit expenses", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [8450.20, 7120.15], "key": "employee_exp" },
+        { "label": "Finance cost", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [11905.25, 6891.29], "key": "finance_cost_pl" },
+        { "label": "Depreciation and amortization expenses", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [354.52, 354.60], "key": "depreciation_pl" },
+        { "label": "Impairment losses", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [3480.95, 2967.14], "key": "impairment_pl" },
+        { "label": "Other expenses", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [16020.10, 12080.34], "key": "other_exp_pl" },
+        { "label": "Total expenses", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [40211.02, 29413.52], "key": "total_exp_pl" },
+        { "label": "Profit before tax (III-IV)", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [9173.98, 9243.90], "key": "pbt_pl" },
+        { "label": "Tax Expense", "indent": 0, "isHeader": true, "isTotal": false, "isEditable": false, "values": [null, null], "key": "tax_header" },
+        { "label": "(1) Current tax", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [2523.18, 2410.00], "key": "current_tax" },
+        { "label": "(2) Deferred tax", "indent": 1, "isHeader": false, "isTotal": false, "isEditable": true, "values": [0, 0], "key": "deferred_tax_pl" },
+        { "label": "Profit After Tax", "indent": 0, "isHeader": false, "isTotal": true, "isEditable": false, "values": [6650.80, 6833.90], "key": "pat_pl" }
+      ]
+    }
+  },
+  "partB": [],
+  "metadata": {
+    "investmentInGroup": [0, 0],
+    "monthsInYear": [12, 12]
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "periods": [
+    { "date": "2023-12-31", "type": "Audited", "months": 12 },
+    { "date": "2022-12-31", "type": "Audited", "months": 12 }
+  ],
+  "balanceSheet": {
+    "title": "BALANCE SHEET",
+    "rows": [
+      { "label": "ASSETS", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "assets_hdr" },
+      { "label": "Bank and cash balances", "values": [3605.17, 8043.45], "pctChanges": [-55.2, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "cash_bal" },
+      { "label": "Investments held at amortized rates", "values": [40528.70, 14856.82], "pctChanges": [172.8, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "investments" },
+      { "label": "Loans and advances", "values": [81381.05, 68826.17], "pctChanges": [18.2, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "loans_advances" },
+      { "label": "Amounts due from related companies", "values": [3000.00, 2061.71], "pctChanges": [45.6, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "related_co" },
+      { "label": "Other receivables", "values": [3764.22, 3903.45], "pctChanges": [-3.6, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "other_recv" },
+      { "label": "Intangible assets", "values": [124.70, 0], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "intangibles" },
+      { "label": "Property and equipment", "values": [802.54, 782.85], "pctChanges": [2.5, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "ppe" },
+      { "label": "Deferred tax asset", "values": [2142.10, 1784.08], "pctChanges": [20.1, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dta" },
+      { "label": "TOTAL ASSETS", "values": [135348.48, 100258.53], "pctChanges": [35.0, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_assets_o" },
+      { "label": "LIABILITIES", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "liab_hdr" },
+      { "label": "Borrowings", "values": [98238.34, 64418.66], "pctChanges": [52.5, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "borrowings" },
+      { "label": "Due to related companies", "values": [6258.47, 2580.00], "pctChanges": [142.6, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "related_payable" },
+      { "label": "Trade and other payables", "values": [1999.61, 4563.27], "pctChanges": [-56.2, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "trade_payable" },
+      { "label": "Lease liabilities", "values": [588.68, 669.99], "pctChanges": [-12.1, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "lease_liab" },
+      { "label": "Tax payable", "values": [0, 0], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "tax_payable" },
+      { "label": "TOTAL LIABILITIES", "values": [107085.10, 72231.92], "pctChanges": [48.3, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_liab_o" },
+      { "label": "EQUITY", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "equity_hdr" },
+      { "label": "Share capital", "values": [20.00, 20.00], "pctChanges": [0, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "share_cap" },
+      { "label": "Share Premium", "values": [580.00, 580.00], "pctChanges": [0, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "share_premium" },
+      { "label": "Proposed dividend", "values": [0, 0], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "proposed_div" },
+      { "label": "Retained earnings", "values": [27663.38, 27426.61], "pctChanges": [0.9, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "retained_earnings" },
+      { "label": "TOTAL EQUITY", "values": [28263.38, 28026.61], "pctChanges": [0.8, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_equity_o" },
+      { "label": "TOTAL EQUITY & LIABILITIES", "values": [135348.48, 100258.53], "pctChanges": [35.0, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_eq_liab_o" }
+    ]
+  },
+  "incomeStatement": {
+    "title": "INCOME STATEMENT",
+    "rows": [
+      { "label": "Interest Income", "values": [38662.67, 30450.12], "pctChanges": [27.0, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "interest_income" },
+      { "label": "Interest Expense", "values": [-11905.25, -6891.29], "pctChanges": [72.8, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "interest_expense" },
+      { "label": "Net Interest Income", "values": [26757.42, 23558.83], "pctChanges": [13.6, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "nii" },
+      { "label": "Fee and Commission Income", "values": [9787.58, 7795.00], "pctChanges": [25.6, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "fee_income" },
+      { "label": "Other operating income", "values": [934.75, 412.30], "pctChanges": [126.7, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "other_op_income" },
+      { "label": "Total Income", "values": [37479.75, 31766.13], "pctChanges": [18.0, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_income_o" },
+      { "label": "Expenses", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "exp_hdr" },
+      { "label": "Foreign exchange losses", "values": [-1383.89, -2386.85], "pctChanges": [-42.0, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "fx_losses" },
+      { "label": "Operating expenses", "values": [-24470.30, -18120.34], "pctChanges": [35.0, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "opex" },
+      { "label": "Impairment losses on Loans and advances", "values": [-3480.95, -2967.14], "pctChanges": [17.3, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "impairment" },
+      { "label": "Total Operating Expenses", "values": [-29335.14, -23474.33], "pctChanges": [24.9, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_opex" },
+      { "label": "Profit / (Loss) before tax", "values": [8144.61, 8291.80], "pctChanges": [-1.8, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "pbt" },
+      { "label": "Income tax (expense) / credit", "values": [-2523.18, -2410.00], "pctChanges": [4.7, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "income_tax" },
+      { "label": "Net Profit", "values": [5621.43, 5881.80], "pctChanges": [-4.4, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "net_profit" }
+    ]
+  },
+  "cashflowSummary": {
+    "title": "Cashflow Statement summary",
+    "rows": [
+      { "label": "Net CFO", "values": [6510.51, -52598.35], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "net_cfo" },
+      { "label": "Net CFI", "values": [-26471.69, -18165.04], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "net_cfi" },
+      { "label": "Net CFF", "values": [21930.28, 64369.99], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "net_cff" },
+      { "label": "*Net Incr/(Decr) in Cash & Cash equiv.", "values": [1969.10, -6393.40], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "net_cash_change" }
+    ]
+  },
+  "dscr": {
+    "title": "Debt Service Coverage Ratio (DSCR) computation",
+    "cashflowFromOps": {
+      "rows": [
+        { "label": "Net Profit/(Loss) before tax", "values": [8144.61, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_pbt" },
+        { "label": "Depreciation & Amortisation", "values": [354.52, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_dep" },
+        { "label": "Loss/(gain) on disposal of PPE", "values": [-26.69, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_ppe_gain" },
+        { "label": "Net foreign exchange loss/(gain)", "values": [1383.89, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_fx" },
+        { "label": "Other Non-Cash items/expenses", "values": [3480.95, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_noncash" },
+        { "label": "Other Incomes", "values": [521.90, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_other_inc" },
+        { "label": "Sub-Total: Non-Cash items & Other Incomes", "values": [5714.57, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "dscr_subtotal_nc" },
+        { "label": "Interest expense", "values": [11905.25, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_interest" },
+        { "label": "Net change in Working Capital", "values": [-1438.44, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_wc" },
+        { "label": "Cashflow from Operations (CFO)", "values": [24325.99, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "dscr_cfo" },
+        { "label": "Income Tax Paid", "values": [10688.42, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_tax_paid" },
+        { "label": "Cashflow from Operations (CFO) after Tax", "values": [13637.57, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "dscr_cfo_after_tax" },
+        { "label": "Interest Expense", "values": [11905.25, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 0, "key": "dscr_int_exp2" },
+        { "label": "Net Cashflow from Operations (CFO)", "values": [1732.32, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "dscr_net_cfo" }
+      ]
+    },
+    "loanRepayments": {
+      "rows": [
+        { "label": "NCBA Debt portion_New", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "ncba_new_hdr" },
+        { "label": "Annual Interest on Overdraft", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_new_od" },
+        { "label": "Annual Interest on other Revolving W/C lines", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_new_wc" },
+        { "label": "*Annual (Principal+Interest) on Term Loans", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_new_term" },
+        { "label": "Sub-Total_NCBA Debt_New", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "ncba_new_total" },
+        { "label": "NCBA Debt portion_Existing", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "ncba_exist_hdr" },
+        { "label": "Annual Interest on Overdraft", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_exist_od" },
+        { "label": "Annual Interest on other Revolving W/C lines", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_exist_wc" },
+        { "label": "*Annual (Principal+Interest) on Term Loans", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "ncba_exist_term" },
+        { "label": "Sub-Total_NCBA Debt_Existing", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "ncba_exist_total" },
+        { "label": "Other Lenders (est.)", "values": [null, null], "pctChanges": [null, null], "isHeader": true, "isTotal": false, "indent": 0, "key": "other_lenders_hdr" },
+        { "label": "Annual Interest on Revolving W/C lines incl. OD", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "other_lenders_wc" },
+        { "label": "*Annual (Principal+Interest) on Term Loans", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": false, "indent": 1, "key": "other_lenders_term" },
+        { "label": "Sub-Total_Other Lenders", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "other_lenders_total" },
+        { "label": "Total Loan Repayments (B)", "values": [0, null], "pctChanges": [null, null], "isHeader": false, "isTotal": true, "indent": 0, "key": "total_loan_repay" }
+      ]
+    },
+    "dscrResult": ["N/A", "N/A"]
+  },
+  "bccSummary": [
+    { "label": "Total Revenue", "values": [37479.75, 31766.13], "pctChanges": [18.0, null], "key": "bcc_revenue", "format": "number" },
+    { "label": "Revenue Growth (%)", "values": [18.0, null], "pctChanges": [null, null], "key": "bcc_rev_growth", "format": "percent" },
+    { "label": "Gross Profit", "values": [13009.45, 11320.50], "pctChanges": [14.9, null], "key": "bcc_gross_profit", "format": "number" },
+    { "label": "Gross Profit Margin", "values": [34.71, 35.64], "pctChanges": [-2.6, null], "key": "bcc_gpm", "format": "percent" },
+    { "label": "EBITDA", "values": [8144.61, 8291.80], "pctChanges": [-1.8, null], "key": "bcc_ebitda", "format": "number" },
+    { "label": "NPBT", "values": [8144.61, 8291.80], "pctChanges": [-1.8, null], "key": "bcc_npbt", "format": "number" },
+    { "label": "Net Profit Before Taxes Margin (%)", "values": [21.73, 26.11], "pctChanges": [-16.8, null], "key": "bcc_npbt_margin", "format": "percent" },
+    { "label": "Gearing (x)", "values": [3.50, 2.30], "pctChanges": [52.2, null], "key": "bcc_gearing", "format": "ratio" },
+    { "label": "Interest Cover EBITDA (x)", "values": [0.68, 1.20], "pctChanges": [-43.3, null], "key": "bcc_interest_cover", "format": "ratio" },
+    { "label": "DSCR", "values": ["N/A", "N/A"], "pctChanges": [null, null], "key": "bcc_dscr", "format": "ratio" },
+    { "label": "Current Ratio", "values": [1.24, 1.36], "pctChanges": [-8.8, null], "key": "bcc_current_ratio", "format": "ratio" },
+    { "label": "Leverage", "values": [3.79, 2.58], "pctChanges": [46.9, null], "key": "bcc_leverage", "format": "ratio" },
+    { "label": "Total Net Worth", "values": [28263.38, 28026.61], "pctChanges": [0.8, null], "key": "bcc_net_worth", "format": "number" },
+    { "label": "Tangible Net Worth (Net of Revaluation Reserves)", "values": [28263.38, 28026.61], "pctChanges": [0.8, null], "key": "bcc_tnw", "format": "number" },
+    { "label": "NCAO ('000)", "values": [6510.51, -52598.35], "pctChanges": [null, null], "key": "bcc_ncao", "format": "number" },
+    { "label": "PAYBACK PERIOD", "values": ["12.14x", "N/A"], "pctChanges": [null, null], "key": "bcc_payback", "format": "text" }
+  ]
+}
