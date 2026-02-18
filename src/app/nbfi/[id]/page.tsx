@@ -32,12 +32,20 @@ export default function NBFIDetailRedirectPage() {
     }
 
     const status = nbfi.status;
-    if (status === 'draft' || status === 'uploading') {
-      router.replace(`/nbfi/${id}/upload`);
+    if (status === 'monitoring') {
+      router.replace(`/nbfi/${id}/monitoring`);
+    } else if (status === 'setup_complete') {
+      router.replace(`/nbfi/${id}/covenants`);
+    } else if (status === 'pool_selected') {
+      router.replace(`/nbfi/${id}/setup`);
+    } else if (status === 'approved') {
+      router.replace(`/nbfi/${id}/loan-book`);
+    } else if (status === 'pending_review' || status === 'rejected') {
+      router.replace(`/nbfi/${id}/output`);
     } else if (status === 'spreading') {
       router.replace(`/nbfi/${id}/input`);
     } else {
-      router.replace(`/nbfi/${id}/output`);
+      router.replace(`/nbfi/${id}/upload`);
     }
   }, [id, user, getNBFI, router]);
 
