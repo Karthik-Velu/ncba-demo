@@ -73,7 +73,7 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
   const stepDone = (step: number): boolean => {
     const order: Record<string, number> = {
       draft: 0, uploading: 0, spreading: 1, pending_review: 1, approved: 1, rejected: 1,
-      pool_selected: 2, setup_complete: 3, monitoring: 8,
+      pool_selected: 2, setup_complete: 4, monitoring: 8,
     };
     return (order[status] ?? 0) >= step;
   };
@@ -82,7 +82,7 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
     if (stepDone(step)) return <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />;
     const currentStep = {
       draft: 0, uploading: 0, spreading: 1, pending_review: 1, approved: 1, pool_selected: 2,
-      setup_complete: 3, monitoring: 8,
+      setup_complete: 4, monitoring: 8,
     }[status] ?? 0;
     if (currentStep === step) return <CircleDot className="w-3.5 h-3.5 text-blue-400" />;
     return <Lock className="w-3.5 h-3.5 text-gray-500" />;
@@ -96,23 +96,41 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
     href?: string;
   };
 
-  const steps: StepItem[] = [
-    { step: 1, label: 'Financial Assessment', icon: FileSpreadsheet, subs: [
-      { href: `/nbfi/${nbfiId}/upload`, label: 'Upload' },
-      { href: `/nbfi/${nbfiId}/input`, label: 'Spreading' },
-      { href: `/nbfi/${nbfiId}/output`, label: 'Output & Ratios' },
-      { href: `/nbfi/${nbfiId}/review`, label: 'Review' },
-    ]},
-    { step: 2, label: 'Loan Book Assessment', icon: BarChart3, subs: [
-      { href: `/nbfi/${nbfiId}/loan-book`, label: 'Upload Loan Book' },
-      { href: `/nbfi/${nbfiId}/eda`, label: 'Portfolio EDA' },
-      { href: `/nbfi/${nbfiId}/selection`, label: 'Asset Selection' },
-    ]},
-    { step: 3, label: 'Setup & Configuration', icon: Settings, href: `/nbfi/${nbfiId}/setup` },
-    { step: 5, label: 'Document Management', icon: FileText, href: `/nbfi/${nbfiId}/documents` },
-    { step: 6, label: 'Covenant Monitoring', icon: AlertTriangle, href: `/nbfi/${nbfiId}/covenants` },
-    { step: 7, label: 'Early Warnings', icon: TrendingUp, href: `/nbfi/${nbfiId}/early-warnings` },
-    { step: 8, label: 'Risk Dashboard', icon: Activity, href: `/nbfi/${nbfiId}/monitoring` },
+  type Section = { title: string; steps: StepItem[] };
+
+  const sections: Section[] = [
+    {
+      title: 'Pre-Onboarding',
+      steps: [
+        { step: 1, label: 'Financial Assessment', icon: FileSpreadsheet, subs: [
+          { href: `/nbfi/${nbfiId}/upload`, label: 'Upload' },
+          { href: `/nbfi/${nbfiId}/input`, label: 'Spreading' },
+          { href: `/nbfi/${nbfiId}/output`, label: 'Output & Ratios' },
+          { href: `/nbfi/${nbfiId}/review`, label: 'Review' },
+        ]},
+        { step: 2, label: 'Loan Book Assessment', icon: BarChart3, subs: [
+          { href: `/nbfi/${nbfiId}/loan-book`, label: 'Upload Loan Book' },
+          { href: `/nbfi/${nbfiId}/eda`, label: 'Portfolio EDA' },
+          { href: `/nbfi/${nbfiId}/selection`, label: 'Asset Selection' },
+        ]},
+      ],
+    },
+    {
+      title: 'Transaction Setup',
+      steps: [
+        { step: 3, label: 'Covenant & Doc Setup', icon: Settings, href: `/nbfi/${nbfiId}/setup` },
+        { step: 4, label: 'Data Integration', icon: Wifi, href: `/nbfi/${nbfiId}/integration` },
+      ],
+    },
+    {
+      title: 'Monitoring',
+      steps: [
+        { step: 5, label: 'Document Management', icon: FileText, href: `/nbfi/${nbfiId}/documents` },
+        { step: 6, label: 'Covenant Monitoring', icon: AlertTriangle, href: `/nbfi/${nbfiId}/covenants` },
+        { step: 7, label: 'Early Warnings', icon: TrendingUp, href: `/nbfi/${nbfiId}/early-warnings` },
+        { step: 8, label: 'Risk Dashboard', icon: Activity, href: `/nbfi/${nbfiId}/monitoring` },
+      ],
+    },
   ];
 
   return (
@@ -127,48 +145,53 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
         }`}>{status.replace(/_/g, ' ')}</span>
       </div>
       <nav className="flex-1 py-2 overflow-y-auto">
-        {steps.map(({ step, label, icon: Icon, subs, href }) => {
-          const isExpanded = expanded === `step-${step}`;
-          const hasSubActive = subs?.some(s => pathname === s.href);
-          const isActive = href ? pathname === href : hasSubActive;
+        {sections.map(({ title, steps }) => (
+          <div key={title}>
+            <p className="px-4 pt-4 pb-1 text-[9px] font-bold uppercase tracking-widest text-blue-400/60">{title}</p>
+            {steps.map(({ step, label, icon: Icon, subs, href }) => {
+              const isExpanded = expanded === `step-${step}`;
+              const hasSubActive = subs?.some(s => pathname === s.href);
+              const isActive = href ? pathname === href : hasSubActive;
 
-          if (subs) {
-            return (
-              <div key={step}>
-                <button
-                  onClick={() => setExpanded(isExpanded ? null : `step-${step}`)}
-                  className={`w-full flex items-center gap-2 px-4 py-2.5 text-xs transition-colors ${
-                    isActive || isExpanded ? 'bg-[#003366] text-white' : 'text-blue-200 hover:bg-[#003366]/50 hover:text-white'
-                  }`}
-                >
+              if (subs) {
+                return (
+                  <div key={step}>
+                    <button
+                      onClick={() => setExpanded(isExpanded ? null : `step-${step}`)}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 text-xs transition-colors ${
+                        isActive || isExpanded ? 'bg-[#003366] text-white' : 'text-blue-200 hover:bg-[#003366]/50 hover:text-white'
+                      }`}
+                    >
+                      {stepIcon(step)}
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="flex-1 text-left">{label}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded || hasSubActive ? 'rotate-180' : ''}`} />
+                    </button>
+                    {(isExpanded || hasSubActive) && (
+                      <div className="bg-[#001a33]">
+                        {subs.map(s => (
+                          <Link key={s.href} href={s.href} className={`block pl-14 pr-4 py-2 text-xs ${
+                            pathname === s.href ? 'text-white bg-[#003366]' : 'text-blue-300 hover:text-white hover:bg-[#003366]/30'
+                          }`}>{s.label}</Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={step} href={href!} className={`flex items-center gap-2 px-4 py-2.5 text-xs transition-colors ${
+                  isActive ? 'bg-[#003366] text-white border-r-2 border-blue-400' : 'text-blue-200 hover:bg-[#003366]/50 hover:text-white'
+                }`}>
                   {stepIcon(step)}
                   <Icon className="w-3.5 h-3.5" />
-                  <span className="flex-1 text-left">Step {step}: {label}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded || hasSubActive ? 'rotate-180' : ''}`} />
-                </button>
-                {(isExpanded || hasSubActive) && (
-                  <div className="bg-[#001a33]">
-                    {subs.map(s => (
-                      <Link key={s.href} href={s.href} className={`block pl-14 pr-4 py-2 text-xs ${
-                        pathname === s.href ? 'text-white bg-[#003366]' : 'text-blue-300 hover:text-white hover:bg-[#003366]/30'
-                      }`}>{s.label}</Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          return (
-            <Link key={step} href={href!} className={`flex items-center gap-2 px-4 py-2.5 text-xs transition-colors ${
-              isActive ? 'bg-[#003366] text-white border-r-2 border-blue-400' : 'text-blue-200 hover:bg-[#003366]/50 hover:text-white'
-            }`}>
-              {stepIcon(step)}
-              <Icon className="w-3.5 h-3.5" />
-              <span>Step {step}: {label}</span>
-            </Link>
-          );
-        })}
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </SidebarShell>
   );
@@ -179,6 +202,7 @@ function NBFIPortalSidebar({ user, pathname, logout }: { user: { name: string; r
     { href: '/nbfi-portal', label: 'Portal Home', icon: Home },
     { href: '/nbfi-portal/upload-loan-book', label: 'Upload Loan Book', icon: Upload },
     { href: '/nbfi-portal/documents', label: 'Upload Documents', icon: FileText },
+    { href: '/nbfi-portal/sftp-config', label: 'SFTP Configuration', icon: Wifi },
   ];
 
   return (
