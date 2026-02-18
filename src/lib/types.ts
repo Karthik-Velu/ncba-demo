@@ -157,29 +157,44 @@ export interface CashFlowSection {
 
 export interface LoanLevelRow {
   loanId: string;
+  applicationId: string;
+  dpdAsOfReportingDate: number;
+  currentBalance: number;
+  loanDisbursedAmount: number;
+  totalOverdueAmount: number;
+  loanDisbursedDate: string;
+  interestRate: number;
+  loanWrittenOff: boolean;
+  repossession: boolean;
+  recoveryAfterWriteoff: number;
+  geography?: string;
+  product?: string;
+  segment?: string;
   borrowerName?: string;
-  geography: string;
-  product: string;
-  segment: string;
-  loanSize: number;
-  disbursementDate: string;
-  dpdBucket: string;
-  balance: number;
-  kiScore?: number;
-  interestRate?: number;
   residualTenureMonths?: number;
 }
+
+export function getDpdBucket(dpd: number): string {
+  if (dpd <= 0) return 'Current';
+  if (dpd <= 30) return '1-30';
+  if (dpd <= 60) return '31-60';
+  if (dpd <= 90) return '61-90';
+  if (dpd <= 180) return '91-180';
+  return '180+';
+}
+
+export const DPD_BUCKETS = ['Current', '1-30', '31-60', '61-90', '91-180', '180+'] as const;
 
 export interface PoolSelectionState {
   excludedSegments: string[];
   filterSnapshot: {
-    kiScoreMax?: number;
     loanAmountMin?: number;
     loanAmountMax?: number;
     tenureMin?: number;
     tenureMax?: number;
     rateMin?: number;
     rateMax?: number;
+    dpdBuckets?: string[];
     geographies: string[];
     products: string[];
   };

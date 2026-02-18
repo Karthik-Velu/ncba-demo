@@ -53,7 +53,7 @@ export default function MonitoringPage() {
         collectionEff: mon.collectionEfficiency || 0,
       };
     }
-    const totalBalance = loans.reduce((s, r) => s + r.balance, 0);
+    const totalBalance = loans.reduce((s, r) => s + r.currentBalance, 0);
     return {
       totalLoans: loans.length,
       totalBalance,

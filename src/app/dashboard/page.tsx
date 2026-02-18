@@ -71,7 +71,7 @@ export default function DashboardPage() {
 
       const loans = loanBookData[n.id];
       if (loans?.length) {
-        totalLoanBookBalance += loans.reduce((s, r) => s + r.balance, 0);
+        totalLoanBookBalance += loans.reduce((s, r) => s + r.currentBalance, 0);
       }
 
       if (n.documents) {
@@ -159,7 +159,7 @@ export default function DashboardPage() {
               {nbfis.map(nbfi => {
                 const loans = loanBookData[nbfi.id];
                 const loanCount = loans?.length || 0;
-                const loanBalance = loans?.reduce((s, r) => s + r.balance, 0) || 0;
+                const loanBalance = loans?.reduce((s, r) => s + r.currentBalance, 0) || 0;
 
                 let covenantLabel = '—';
                 let covenantColor = 'text-gray-400';

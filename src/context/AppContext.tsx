@@ -118,7 +118,6 @@ const SEED_POOL_SELECTION: Record<string, PoolSelectionState> = {
   'seed-1': {
     excludedSegments: ['MSME'],
     filterSnapshot: {
-      kiScoreMax: 50,
       loanAmountMin: 20000,
       loanAmountMax: 500000,
       geographies: ['Nairobi', 'Mombasa', 'Nakuru', 'Kisumu'],
@@ -157,6 +156,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    localStorage.removeItem('ncba-demo-state');
   }, []);
 
   const addNBFI = useCallback((data: Omit<NBFIRecord, 'id' | 'status' | 'dateOnboarded' | 'financialData' | 'commentary'>) => {

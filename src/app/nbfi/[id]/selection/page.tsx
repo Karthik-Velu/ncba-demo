@@ -7,7 +7,22 @@ import Sidebar from '@/components/Sidebar';
 import { ArrowLeft, Filter, CheckCircle2, Shield, Download, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import type { LoanLevelRow, PoolSelectionState } from '@/lib/types';
+import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import { generateMockLoanBook } from '@/lib/mockLoanBook';
+
+const LOSS_RATES: Record<string, number> = {
+  'Current': 0, '1-30': 0.01, '31-60': 0.10, '61-90': 0.25, '91-180': 0.50, '180+': 1.0,
+};
+
+function estimateLoss(rows: LoanLevelRow[]): { amount: number; rate: number } {
+  let totalBal = 0, totalLoss = 0;
+  for (const r of rows) {
+    const bucket = getDpdBucket(r.dpdAsOfReportingDate);
+    totalBal += r.currentBalance;
+    totalLoss += r.currentBalance * (LOSS_RATES[bucket] ?? 0);
+  }
+  return { amount: totalLoss, rate: totalBal > 0 ? totalLoss / totalBal : 0 };
+}
 
 function useLoanData(nbfiId: string, loanBookData: Record<string, LoanLevelRow[]>) {
   return useMemo(() => {
@@ -24,60 +39,64 @@ export default function SelectionPage() {
   const rows = useLoanData(id, loanBookData);
   const selection = selectedPoolByNbfi[id];
 
-  const [kiScoreMax, setKiScoreMax] = useState(selection?.filterSnapshot?.kiScoreMax ?? 50);
   const [loanAmountMin, setLoanAmountMin] = useState(selection?.filterSnapshot?.loanAmountMin ?? 0);
   const [loanAmountMax, setLoanAmountMax] = useState(selection?.filterSnapshot?.loanAmountMax ?? 500000);
+  const [tenureMin, setTenureMin] = useState(selection?.filterSnapshot?.tenureMin ?? 0);
+  const [tenureMax, setTenureMax] = useState(selection?.filterSnapshot?.tenureMax ?? 36);
+  const [rateMin, setRateMin] = useState(selection?.filterSnapshot?.rateMin ?? 0);
+  const [rateMax, setRateMax] = useState(selection?.filterSnapshot?.rateMax ?? 30);
+  const [selectedGeos, setSelectedGeos] = useState<string[]>(selection?.filterSnapshot?.geographies ?? []);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>(selection?.filterSnapshot?.products ?? []);
+  const [selectedDpdBuckets, setSelectedDpdBuckets] = useState<string[]>(selection?.filterSnapshot?.dpdBuckets ?? []);
   const [excludedSegments, setExcludedSegments] = useState<string[]>(selection?.excludedSegments ?? []);
   const [confirmed, setConfirmed] = useState(!!selection?.confirmedAt);
 
-  useEffect(() => {
-    if (!user) router.push('/');
-  }, [user, router]);
-
+  useEffect(() => { if (!user) router.push('/'); }, [user, router]);
   const nbfi = getNBFI(id);
-  useEffect(() => {
-    if (user && id && !nbfi) router.replace('/dashboard');
-  }, [user, id, nbfi, router]);
+  useEffect(() => { if (user && id && !nbfi) router.replace('/dashboard'); }, [user, id, nbfi, router]);
 
-  const segmentsAvailable = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach(r => set.add(r.segment || r.product || 'Other'));
-    return Array.from(set).sort();
-  }, [rows]);
+  const geoOptions = useMemo(() => [...new Set(rows.map(r => r.geography || 'Unknown'))].sort(), [rows]);
+  const prodOptions = useMemo(() => [...new Set(rows.map(r => r.product || 'Unknown'))].sort(), [rows]);
+  const segOptions = useMemo(() => [...new Set(rows.map(r => r.segment || r.product || 'Other'))].sort(), [rows]);
 
   const toggleExclusion = (seg: string) => {
-    setExcludedSegments(prev =>
-      prev.includes(seg) ? prev.filter(s => s !== seg) : [...prev, seg]
-    );
+    setExcludedSegments(prev => prev.includes(seg) ? prev.filter(s => s !== seg) : [...prev, seg]);
   };
+  const toggleGeo = (g: string) => setSelectedGeos(p => p.includes(g) ? p.filter(x => x !== g) : [...p, g]);
+  const toggleProduct = (p: string) => setSelectedProducts(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  const toggleDpd = (b: string) => setSelectedDpdBuckets(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
 
   const filtered = useMemo(() => {
     return rows.filter(r => {
       if (excludedSegments.includes(r.segment || r.product || 'Other')) return false;
-      if (r.kiScore != null && r.kiScore > kiScoreMax) return false;
-      if (r.loanSize < loanAmountMin || r.loanSize > loanAmountMax) return false;
+      if (r.loanDisbursedAmount < loanAmountMin || r.loanDisbursedAmount > loanAmountMax) return false;
+      if (r.residualTenureMonths != null && (r.residualTenureMonths < tenureMin || r.residualTenureMonths > tenureMax)) return false;
+      if (r.interestRate < rateMin || r.interestRate > rateMax) return false;
+      if (selectedGeos.length > 0 && !selectedGeos.includes(r.geography || 'Unknown')) return false;
+      if (selectedProducts.length > 0 && !selectedProducts.includes(r.product || 'Unknown')) return false;
+      if (selectedDpdBuckets.length > 0 && !selectedDpdBuckets.includes(getDpdBucket(r.dpdAsOfReportingDate))) return false;
       return true;
     });
-  }, [rows, excludedSegments, kiScoreMax, loanAmountMin, loanAmountMax]);
+  }, [rows, excludedSegments, loanAmountMin, loanAmountMax, tenureMin, tenureMax, rateMin, rateMax, selectedGeos, selectedProducts, selectedDpdBuckets]);
 
-  const totalBalance = useMemo(() => filtered.reduce((s, r) => s + r.balance, 0), [filtered]);
+  const totalBalance = useMemo(() => filtered.reduce((s, r) => s + r.currentBalance, 0), [filtered]);
   const excludedCount = rows.length - filtered.length;
   const excludedBalance = useMemo(
-    () => rows.filter(r => !filtered.includes(r)).reduce((s, r) => s + r.balance, 0),
+    () => rows.filter(r => !filtered.includes(r)).reduce((s, r) => s + r.currentBalance, 0),
     [rows, filtered]
   );
 
+  const loss = useMemo(() => estimateLoss(filtered), [filtered]);
+
   const poolMetrics = useMemo(() => {
     if (filtered.length === 0) return null;
-    const avgKi = filtered.filter(r => r.kiScore != null).reduce((s, r) => s + (r.kiScore || 0), 0) / (filtered.filter(r => r.kiScore != null).length || 1);
-    const avgRate = filtered.filter(r => r.interestRate != null).reduce((s, r) => s + (r.interestRate || 0), 0) / (filtered.filter(r => r.interestRate != null).length || 1);
-    const par30 = filtered.filter(r => !['0-30'].includes(r.dpdBucket)).length;
+    const avgRate = filtered.reduce((s, r) => s + r.interestRate, 0) / filtered.length;
+    const par30 = filtered.filter(r => r.dpdAsOfReportingDate > 30).length;
     const geos = new Set(filtered.map(r => r.geography));
     const products = new Set(filtered.map(r => r.product));
-    const avgTenure = filtered.filter(r => r.residualTenureMonths != null).reduce((s, r) => s + (r.residualTenureMonths || 0), 0) / (filtered.filter(r => r.residualTenureMonths != null).length || 1);
-
+    const avgTenure = filtered.filter(r => r.residualTenureMonths != null).reduce((s, r) => s + (r.residualTenureMonths || 0), 0) /
+      (filtered.filter(r => r.residualTenureMonths != null).length || 1);
     return {
-      avgKi: avgKi.toFixed(1),
       avgRate: avgRate.toFixed(1),
       par30Pct: (par30 / filtered.length * 100).toFixed(1),
       geoCount: geos.size,
@@ -91,11 +110,10 @@ export default function SelectionPage() {
     const state: PoolSelectionState = {
       excludedSegments: [...excludedSegments],
       filterSnapshot: {
-        kiScoreMax,
-        loanAmountMin,
-        loanAmountMax,
-        geographies: [],
-        products: [],
+        loanAmountMin, loanAmountMax, tenureMin, tenureMax, rateMin, rateMax,
+        dpdBuckets: selectedDpdBuckets.length > 0 ? [...selectedDpdBuckets] : undefined,
+        geographies: [...selectedGeos],
+        products: [...selectedProducts],
       },
       confirmedAt: new Date().toISOString(),
     };
@@ -115,14 +133,11 @@ export default function SelectionPage() {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Asset Selection & Exclusions</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {nbfi.name} — Define the collateral pool and security package
-            </p>
+            <h1 className="text-xl font-bold text-gray-800">Asset Selection &amp; Exclusions</h1>
+            <p className="text-sm text-gray-500 mt-1">{nbfi.name} — Define the collateral pool and security package</p>
           </div>
           <div className="flex gap-2">
             <Link href={`/nbfi/${id}/eda`} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100">&larr; EDA</Link>
-            <Link href={`/nbfi/${id}/loan-book`} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100">Upload</Link>
           </div>
         </div>
 
@@ -130,45 +145,71 @@ export default function SelectionPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Filters */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2">
-                <Filter className="w-4 h-4" /> Selection Filters
-              </h2>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">KI Score max (lower is better)</label>
-                  <input
-                    type="range"
-                    min={10}
-                    max={100}
-                    value={kiScoreMax}
-                    onChange={e => setKiScoreMax(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#003366]"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                    <span>10</span>
-                    <span className="font-bold text-[#003366]">{kiScoreMax}</span>
-                    <span>100</span>
-                  </div>
-                </div>
+              <h2 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2"><Filter className="w-4 h-4" /> Selection Filters</h2>
+              <div className="grid sm:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Loan amount min (KES)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={loanAmountMin}
-                    onChange={e => setLoanAmountMin(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-[#003366] focus:ring-1 focus:ring-[#003366]/20 outline-none"
-                  />
+                  <input type="number" min={0} value={loanAmountMin} onChange={e => setLoanAmountMin(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-[#003366] focus:ring-1 focus:ring-[#003366]/20 outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Loan amount max (KES)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={loanAmountMax}
-                    onChange={e => setLoanAmountMax(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-[#003366] focus:ring-1 focus:ring-[#003366]/20 outline-none"
-                  />
+                  <input type="number" min={0} value={loanAmountMax} onChange={e => setLoanAmountMax(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-[#003366] focus:ring-1 focus:ring-[#003366]/20 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Interest Rate range (%)</label>
+                  <div className="flex gap-2">
+                    <input type="number" min={0} max={50} value={rateMin} onChange={e => setRateMin(Number(e.target.value))}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none" placeholder="Min" />
+                    <input type="number" min={0} max={50} value={rateMax} onChange={e => setRateMax(Number(e.target.value))}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none" placeholder="Max" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Residual Tenure (months)</label>
+                  <div className="flex gap-2">
+                    <input type="number" min={0} value={tenureMin} onChange={e => setTenureMin(Number(e.target.value))}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none" placeholder="Min" />
+                    <input type="number" min={0} value={tenureMax} onChange={e => setTenureMax(Number(e.target.value))}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm outline-none" placeholder="Max" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">Geography</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {geoOptions.map(g => (
+                      <button key={g} onClick={() => toggleGeo(g)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${selectedGeos.includes(g) ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">Product / Purpose</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {prodOptions.map(p => (
+                      <button key={p} onClick={() => toggleProduct(p)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${selectedProducts.includes(p) ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">DPD Buckets (include only)</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DPD_BUCKETS.map(b => (
+                      <button key={b} onClick={() => toggleDpd(b)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${selectedDpdBuckets.includes(b) ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        {b}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -176,152 +217,109 @@ export default function SelectionPage() {
             {/* Segment Exclusion */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-sm font-bold text-[#003366] mb-2">Collateral Exclusions</h2>
-              <p className="text-xs text-gray-500 mb-4">Click segments to exclude them from the security package (e.g. high-risk MSME loans)</p>
+              <p className="text-xs text-gray-500 mb-4">Click segments to exclude them from the security package</p>
               <div className="flex flex-wrap gap-2">
-                {segmentsAvailable.map(seg => (
-                  <button
-                    key={seg}
-                    type="button"
-                    onClick={() => toggleExclusion(seg)}
+                {segOptions.map(seg => (
+                  <button key={seg} type="button" onClick={() => toggleExclusion(seg)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      excludedSegments.includes(seg)
-                        ? 'bg-red-100 text-red-800 border border-red-200'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
-                    }`}
-                  >
+                      excludedSegments.includes(seg) ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
+                    }`}>
                     {excludedSegments.includes(seg) ? 'Excluded: ' : ''}{seg}
                   </button>
                 ))}
               </div>
             </section>
 
-            {/* Security Package Summary Artifact */}
+            {/* Security Package Summary */}
             {confirmed && poolMetrics && (
-              <section className="bg-white rounded-xl border-2 border-green-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-bold text-green-700 flex items-center gap-2">
-                    <Shield className="w-4 h-4" /> Security Package Summary
-                  </h2>
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#003366] text-white rounded-md text-xs font-medium hover:bg-[#004d99]">
-                    <Download className="w-3 h-3" /> Export Report
-                  </button>
+              <section className="bg-white rounded-xl border-2 border-[#003366] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-[#003366]" />
+                  <h2 className="text-sm font-bold text-[#003366]">Confirmed Security Package</h2>
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
                 </div>
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <p className="text-[10px] text-green-600 uppercase tracking-wide">Selected Loans</p>
-                    <p className="text-lg font-bold text-green-800">{filtered.length.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <p className="text-[10px] text-green-600 uppercase tracking-wide">Pool Balance</p>
-                    <p className="text-lg font-bold text-green-800">KES {(totalBalance / 1e6).toFixed(1)}M</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <p className="text-[10px] text-green-600 uppercase tracking-wide">Coverage Ratio</p>
-                    <p className="text-lg font-bold text-green-800">{poolMetrics.coverageRatio}%</p>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <p className="text-[10px] text-green-600 uppercase tracking-wide">PAR 30+</p>
-                    <p className="text-lg font-bold text-green-800">{poolMetrics.par30Pct}%</p>
-                  </div>
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  <MetricBox label="Selected Loans" value={filtered.length.toLocaleString()} />
+                  <MetricBox label="Pool Balance" value={`KES ${(totalBalance / 1e6).toFixed(1)}M`} />
+                  <MetricBox label="Coverage Ratio" value={`${poolMetrics.coverageRatio}%`} />
+                  <MetricBox label="PAR 30+" value={`${poolMetrics.par30Pct}%`} />
+                  <MetricBox label="Avg Interest Rate" value={`${poolMetrics.avgRate}%`} />
+                  <MetricBox label="Avg Residual Tenure" value={`${poolMetrics.avgTenure} months`} />
+                  <MetricBox label="Est. Loss Rate" value={`${(loss.rate * 100).toFixed(2)}%`} />
+                  <MetricBox label="Diversification" value={`${poolMetrics.geoCount} regions, ${poolMetrics.productCount} products`} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Pool Characteristics</h3>
-                    <table className="w-full text-xs">
-                      <tbody>
-                        <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-500">Avg KI Score</td><td className="py-1.5 text-right font-medium">{poolMetrics.avgKi}</td></tr>
-                        <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-500">Avg Interest Rate</td><td className="py-1.5 text-right font-medium">{poolMetrics.avgRate}%</td></tr>
-                        <tr className="border-b border-gray-100"><td className="py-1.5 text-gray-500">Avg Residual Tenure</td><td className="py-1.5 text-right font-medium">{poolMetrics.avgTenure} months</td></tr>
-                        <tr><td className="py-1.5 text-gray-500">Diversification</td><td className="py-1.5 text-right font-medium">{poolMetrics.geoCount} regions, {poolMetrics.productCount} products</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Exclusions Applied</h3>
-                    {excludedSegments.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {excludedSegments.map(seg => (
-                          <div key={seg} className="flex items-center gap-2 text-xs">
-                            <span className="w-2 h-2 rounded-full bg-red-400" />
-                            <span className="text-gray-700">{seg}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400">No segment exclusions</p>
-                    )}
-                    <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-500">
-                      <strong>Filter:</strong> KI Score &le; {kiScoreMax}, Loan: KES {loanAmountMin.toLocaleString()} – {loanAmountMax.toLocaleString()}
-                    </div>
-                  </div>
+                <div className="text-xs text-gray-500">
+                  <p>Exclusions: {excludedSegments.length > 0 ? excludedSegments.join(', ') : 'None'}</p>
+                  <p>Filters: Amount {loanAmountMin.toLocaleString()}–{loanAmountMax.toLocaleString()}, Rate {rateMin}–{rateMax}%
+                    {selectedGeos.length > 0 ? `, Geo: ${selectedGeos.join(', ')}` : ''}
+                    {selectedProducts.length > 0 ? `, Products: ${selectedProducts.join(', ')}` : ''}
+                    {selectedDpdBuckets.length > 0 ? `, DPD: ${selectedDpdBuckets.join(', ')}` : ''}
+                  </p>
                 </div>
               </section>
             )}
           </div>
 
-          {/* Right Panel */}
-          <div>
-            <section className="bg-white rounded-xl border border-gray-200 p-6 sticky top-4">
-              <h2 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2">
+          {/* Right Panel - Pool Summary */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6">
+              <h3 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" /> Pool Summary
-              </h2>
+              </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total loans in book</span>
-                  <span className="font-medium">{rows.length}</span>
+                <SummaryRow label="Total loans" value={rows.length.toLocaleString()} />
+                <SummaryRow label="Selected loans" value={filtered.length.toLocaleString()} highlight />
+                <SummaryRow label="Selected balance" value={`KES ${(totalBalance / 1e6).toFixed(1)}M`} highlight />
+                <SummaryRow label="Excluded loans" value={excludedCount.toLocaleString()} muted />
+                <SummaryRow label="Excluded balance" value={`KES ${(excludedBalance / 1e6).toFixed(1)}M`} muted />
+                <div className="border-t border-gray-200 pt-3">
+                  <SummaryRow label="Facility amount" value={`KES ${((nbfi?.fundingAmount || 0) / 1e6).toFixed(0)}M`} />
+                  <SummaryRow label="Coverage ratio" value={poolMetrics ? `${poolMetrics.coverageRatio}%` : '—'} />
                 </div>
-                <hr className="border-gray-100" />
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Selected loans</span>
-                  <span className="font-bold text-[#003366]">{filtered.length}</span>
+                <div className="border-t border-gray-200 pt-3">
+                  <SummaryRow label="Est. Loss Amount" value={`KES ${(loss.amount / 1e6).toFixed(1)}M`} />
+                  <SummaryRow label="Est. Loss Rate" value={`${(loss.rate * 100).toFixed(2)}%`} highlight={loss.rate > 0.05} />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Selected balance</span>
-                  <span className="font-bold text-[#003366]">KES {(totalBalance / 1e6).toFixed(1)}M</span>
-                </div>
-                <hr className="border-gray-100" />
-                <div className="flex justify-between text-gray-400 text-xs">
-                  <span>Excluded loans</span>
-                  <span>{excludedCount}</span>
-                </div>
-                <div className="flex justify-between text-gray-400 text-xs">
-                  <span>Excluded balance</span>
-                  <span>KES {(excludedBalance / 1e6).toFixed(1)}M</span>
-                </div>
-                {nbfi && (
-                  <>
-                    <hr className="border-gray-100" />
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Facility amount</span>
-                      <span className="font-medium">KES {(nbfi.fundingAmount / 1e6).toFixed(0)}M</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Coverage ratio</span>
-                      <span className={`font-bold ${totalBalance >= nbfi.fundingAmount ? 'text-green-600' : 'text-amber-600'}`}>
-                        {nbfi.fundingAmount > 0 ? (totalBalance / nbfi.fundingAmount * 100).toFixed(0) : 0}%
-                      </span>
-                    </div>
-                  </>
+                {poolMetrics && (
+                  <div className="border-t border-gray-200 pt-3">
+                    <SummaryRow label="Avg Interest Rate" value={`${poolMetrics.avgRate}%`} />
+                    <SummaryRow label="PAR 30+" value={`${poolMetrics.par30Pct}%`} />
+                    <SummaryRow label="Avg Tenure" value={`${poolMetrics.avgTenure} mo`} />
+                    <SummaryRow label="Diversification" value={`${poolMetrics.geoCount} geo, ${poolMetrics.productCount} prod`} />
+                  </div>
                 )}
               </div>
-              {!confirmed ? (
-                <button
-                  type="button"
-                  onClick={handleConfirm}
-                  className="mt-6 w-full py-2.5 bg-[#003366] text-white rounded-lg text-sm font-semibold hover:bg-[#004d99] transition-colors"
-                >
-                  Confirm Security Package
+              <button onClick={handleConfirm} disabled={confirmed || filtered.length === 0}
+                className="mt-6 w-full py-3 bg-[#003366] text-white rounded-lg font-medium text-sm hover:bg-[#004d99] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                {confirmed ? <><CheckCircle2 className="w-4 h-4" /> Pool Confirmed</> : 'Confirm Security Package'}
+              </button>
+              {confirmed && (
+                <button className="mt-2 w-full py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2">
+                  <Download className="w-4 h-4" /> Export Pool Details
                 </button>
-              ) : (
-                <div className="mt-6 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800 text-sm">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  Security package confirmed
-                </div>
               )}
-            </section>
+            </div>
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function MetricBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="p-3 rounded-lg bg-gray-50">
+      <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-bold mt-0.5 text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, highlight, muted }: { label: string; value: string; highlight?: boolean; muted?: boolean }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className={`text-xs ${muted ? 'text-gray-400' : 'text-gray-600'}`}>{label}</span>
+      <span className={`text-xs font-semibold ${highlight ? 'text-[#003366]' : muted ? 'text-gray-400' : 'text-gray-800'}`}>{value}</span>
     </div>
   );
 }

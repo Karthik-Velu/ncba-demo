@@ -1,34 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import {
   LayoutDashboard, UserPlus, LogOut, FileSpreadsheet, Shield,
   Upload, BarChart3, Filter, Settings, FileText, AlertTriangle,
   Activity, TrendingUp, CheckCircle2, Lock, CircleDot, ChevronDown,
-  Building2, Home,
+  Building2, Home, Wifi,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export default function Sidebar() {
   const { user, logout, getNBFI } = useApp();
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const nbfiId = params?.id as string | undefined;
+
+  const handleLogout = useCallback(() => {
+    logout();
+    router.push('/');
+  }, [logout, router]);
 
   if (!user) return null;
 
-  if (user.role === 'nbfi_user') return <NBFIPortalSidebar user={user} pathname={pathname} logout={logout} />;
+  if (user.role === 'nbfi_user') return <NBFIPortalSidebar user={user} pathname={pathname} logout={handleLogout} />;
 
   const isNBFIDetail = pathname.startsWith('/nbfi/') && nbfiId;
 
   if (isNBFIDetail) {
     const nbfi = getNBFI(nbfiId);
-    return <NBFIDetailSidebar nbfi={nbfi} nbfiId={nbfiId} pathname={pathname} user={user} logout={logout} />;
+    return <NBFIDetailSidebar nbfi={nbfi} nbfiId={nbfiId} pathname={pathname} user={user} logout={handleLogout} />;
   }
 
-  return <GlobalSidebar pathname={pathname} user={user} logout={logout} />;
+  return <GlobalSidebar pathname={pathname} user={user} logout={handleLogout} />;
 }
 
 function GlobalSidebar({ pathname, user, logout }: { pathname: string; user: { name: string; role: string }; logout: () => void }) {

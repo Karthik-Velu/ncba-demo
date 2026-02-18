@@ -24,18 +24,24 @@ const SFTP_STAGES = [
 
 const UPLOAD_STAGES = [
   'Reading file...',
-  'Validating 12 required columns...',
+  'Validating 11 required columns...',
   'Parsing rows...',
-  'Running KI Score model...',
+  'Computing DPD buckets...',
   'Complete!',
 ];
 
 const FIELD_MAPPING = [
-  { source: 'loan_id', target: 'Loan ID' },
-  { source: 'geography', target: 'Geography' },
-  { source: 'dpd_bucket', target: 'DPD Bucket' },
-  { source: 'balance', target: 'Outstanding Balance' },
-  { source: 'product', target: 'Product Type' },
+  { source: 'Loan ID', target: 'loanId' },
+  { source: 'Application ID', target: 'applicationId' },
+  { source: 'DPD as of Reporting Date', target: 'dpdAsOfReportingDate' },
+  { source: 'Current Balance', target: 'currentBalance' },
+  { source: 'Loan Disbursed Amount', target: 'loanDisbursedAmount' },
+  { source: 'Total Overdue Amount', target: 'totalOverdueAmount' },
+  { source: 'Loan Disbursed Date', target: 'loanDisbursedDate' },
+  { source: 'Interest Rate', target: 'interestRate' },
+  { source: 'Loan Written Off', target: 'loanWrittenOff' },
+  { source: 'Repossession', target: 'repossession' },
+  { source: 'Recovery after Writeoff', target: 'recoveryAfterWriteoff' },
 ];
 
 type Channel = 'sftp' | 'ncba' | 'nbfi' | null;
@@ -71,7 +77,7 @@ export default function LoanBookPage() {
   const existingRows = loanBookData[id] ?? [];
   const hasData = existingRows.length > 0;
 
-  const totalBalance = existingRows.reduce((sum, r) => sum + (r.balance ?? 0), 0);
+  const totalBalance = existingRows.reduce((sum, r) => sum + (r.currentBalance ?? 0), 0);
 
   const loadData = useCallback(
     (source: 'sftp' | 'ncba_upload' | 'nbfi_portal') => {
@@ -81,7 +87,7 @@ export default function LoanBookPage() {
         uploadedAt: new Date().toISOString(),
         uploadedBy: user?.name ?? 'System',
         rowCount: MOCK_LOAN_BOOK.length,
-        totalBalance: MOCK_LOAN_BOOK.reduce((s, r) => s + (r.balance ?? 0), 0),
+        totalBalance: MOCK_LOAN_BOOK.reduce((s, r) => s + (r.currentBalance ?? 0), 0),
         filename: source === 'sftp' ? 'loanbook_2025Q4.csv' : undefined,
       });
     },

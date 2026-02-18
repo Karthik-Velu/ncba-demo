@@ -12,14 +12,8 @@ const BUCKET_LABELS: Record<string, string> = {
   normal: 'Normal', watch: 'Watch', substandard: 'Substandard', doubtful: 'Doubtful', loss: 'Loss',
 };
 
-function parseDpdToNumber(dpd: string): number {
-  const cleaned = dpd.replace(/[^0-9-]/g, '');
-  const match = cleaned.match(/(\d+)/);
-  return match ? parseInt(match[1]) : 0;
-}
-
 function classifyLoan(loan: LoanLevelRow, rules: ProvisioningRule[]): ProvisioningRule | undefined {
-  const dpd = parseDpdToNumber(loan.dpdBucket);
+  const dpd = loan.dpdAsOfReportingDate;
   return rules.find(r => dpd >= r.dpdMin && dpd <= r.dpdMax);
 }
 
@@ -89,7 +83,7 @@ export default function CovenantsPage() {
       const rule = classifyLoan(loan, rules);
       if (rule) {
         const b = buckets.find(x => x.bucket === rule.bucket);
-        if (b) { b.loanCount++; b.totalBalance += loan.balance; }
+        if (b) { b.loanCount++; b.totalBalance += loan.currentBalance; }
       }
     }
     return buckets;

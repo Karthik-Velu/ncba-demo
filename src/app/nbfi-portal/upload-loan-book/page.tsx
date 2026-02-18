@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import { MOCK_LOAN_BOOK } from '@/lib/mockLoanBook';
+import { getDpdBucket } from '@/lib/types';
 import {
   Upload, FileSpreadsheet, CheckCircle2, Loader2, ArrowLeft,
   CloudUpload, Table2,
@@ -13,10 +14,10 @@ import {
 
 const STAGES = [
   'Reading file...',
-  'Validating 12 required columns...',
-  'Parsing 4,520 rows...',
-  'Running KI Score model on each loan...',
-  'Flagging DPD anomalies...',
+  'Validating 11 required columns...',
+  'Parsing rows...',
+  'Computing DPD buckets...',
+  'Flagging anomalies...',
   'Complete!',
 ];
 
@@ -58,7 +59,7 @@ export default function UploadLoanBookPage() {
             uploadedAt: new Date().toISOString(),
             uploadedBy: user.name,
             rowCount: MOCK_LOAN_BOOK.length,
-            totalBalance: MOCK_LOAN_BOOK.reduce((s, r) => s + r.balance, 0),
+            totalBalance: MOCK_LOAN_BOOK.reduce((s, r) => s + r.currentBalance, 0),
             filename: f.name,
           });
           setTimeout(() => {
@@ -88,7 +89,7 @@ export default function UploadLoanBookPage() {
   const progressPercent = stageIndex < 0 ? 0 : Math.round(((stageIndex + 1) / STAGES.length) * 100);
 
   const previewRows = (done && loans) ? loans.slice(0, 15) : [];
-  const totalBalance = loans ? loans.reduce((s, r) => s + r.balance, 0) : 0;
+  const totalBalance = loans ? loans.reduce((s, r) => s + r.currentBalance, 0) : 0;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -209,40 +210,47 @@ export default function UploadLoanBookPage() {
                     <thead>
                       <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
                         <th className="px-4 py-3">Loan ID</th>
-                        <th className="px-4 py-3">Borrower</th>
+                        <th className="px-4 py-3">App ID</th>
+                        <th className="px-4 py-3">DPD</th>
+                        <th className="px-4 py-3 text-right">Balance</th>
+                        <th className="px-4 py-3 text-right">Disbursed</th>
+                        <th className="px-4 py-3 text-right">Overdue</th>
+                        <th className="px-4 py-3">Rate</th>
                         <th className="px-4 py-3">Geography</th>
                         <th className="px-4 py-3">Product</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
-                        <th className="px-4 py-3">DPD</th>
-                        <th className="px-4 py-3 text-right">KI Score</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {previewRows.map((row) => (
+                      {previewRows.map((row) => {
+                        const bucket = getDpdBucket(row.dpdAsOfReportingDate);
+                        return (
                         <tr key={row.loanId} className="hover:bg-gray-50/50">
                           <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{row.loanId}</td>
-                          <td className="px-4 py-2.5 text-gray-800">{row.borrowerName || '—'}</td>
-                          <td className="px-4 py-2.5 text-gray-600">{row.geography}</td>
-                          <td className="px-4 py-2.5 text-gray-600">{row.product}</td>
-                          <td className="px-4 py-2.5 text-right font-mono text-gray-700">
-                            {row.balance.toLocaleString()}
-                          </td>
+                          <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{row.applicationId}</td>
                           <td className="px-4 py-2.5">
                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                              row.dpdBucket === '0' || row.dpdBucket === 'Current'
-                                ? 'bg-green-100 text-green-700'
-                                : row.dpdBucket === '1-30'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-red-100 text-red-700'
+                              bucket === 'Current' ? 'bg-green-100 text-green-700'
+                                : bucket === '1-30' ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
                             }`}>
-                              {row.dpdBucket}
+                              {row.dpdAsOfReportingDate}d
                             </span>
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-gray-700">
-                            {row.kiScore ?? '—'}
+                            {row.currentBalance.toLocaleString()}
                           </td>
+                          <td className="px-4 py-2.5 text-right font-mono text-gray-700">
+                            {row.loanDisbursedAmount.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono text-gray-700">
+                            {row.totalOverdueAmount.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-600">{row.interestRate}%</td>
+                          <td className="px-4 py-2.5 text-gray-600">{row.geography}</td>
+                          <td className="px-4 py-2.5 text-gray-600">{row.product}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
