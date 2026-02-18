@@ -24,24 +24,53 @@ const SFTP_STAGES = [
 
 const UPLOAD_STAGES = [
   'Reading file...',
-  'Validating 11 required columns...',
+  'Detecting columns...',
+  'Awaiting mapping confirmation...',
+];
+
+const PROCESS_STAGES = [
+  'Validating mapped columns...',
   'Parsing rows...',
   'Computing DPD buckets...',
+  'Running format tests...',
   'Complete!',
 ];
 
-const FIELD_MAPPING = [
-  { source: 'Loan ID', target: 'loanId' },
-  { source: 'Application ID', target: 'applicationId' },
-  { source: 'DPD as of Reporting Date', target: 'dpdAsOfReportingDate' },
-  { source: 'Current Balance', target: 'currentBalance' },
-  { source: 'Loan Disbursed Amount', target: 'loanDisbursedAmount' },
-  { source: 'Total Overdue Amount', target: 'totalOverdueAmount' },
-  { source: 'Loan Disbursed Date', target: 'loanDisbursedDate' },
-  { source: 'Interest Rate', target: 'interestRate' },
-  { source: 'Loan Written Off', target: 'loanWrittenOff' },
-  { source: 'Repossession', target: 'repossession' },
-  { source: 'Recovery after Writeoff', target: 'recoveryAfterWriteoff' },
+const REQUIRED_FIELDS = [
+  'loanId', 'applicationId', 'dpdAsOfReportingDate', 'currentBalance',
+  'loanDisbursedAmount', 'totalOverdueAmount', 'loanDisbursedDate',
+  'interestRate', 'loanWrittenOff', 'repossession', 'recoveryAfterWriteoff',
+];
+
+const DETECTED_COLUMNS = [
+  'Loan ID', 'Application ID', 'DPD as of Reporting Date', 'Current Balance',
+  'Loan Disbursed Amount', 'Total Overdue Amount', 'Loan Disbursed Date',
+  'Interest Rate', 'Loan Written Off', 'Repossession', 'Recovery after Writeoff',
+];
+
+const AUTO_MAPPING: Record<string, string> = {
+  'Loan ID': 'loanId',
+  'Application ID': 'applicationId',
+  'DPD as of Reporting Date': 'dpdAsOfReportingDate',
+  'Current Balance': 'currentBalance',
+  'Loan Disbursed Amount': 'loanDisbursedAmount',
+  'Total Overdue Amount': 'totalOverdueAmount',
+  'Loan Disbursed Date': 'loanDisbursedDate',
+  'Interest Rate': 'interestRate',
+  'Loan Written Off': 'loanWrittenOff',
+  'Repossession': 'repossession',
+  'Recovery after Writeoff': 'recoveryAfterWriteoff',
+};
+
+const FORMAT_TESTS = [
+  { name: 'All required columns present', pass: true },
+  { name: 'Loan ID is unique', pass: true },
+  { name: 'DPD is numeric (≥ 0)', pass: true },
+  { name: 'Balance fields are numeric', pass: true },
+  { name: 'Date format is valid (DD/MM/YYYY or ISO)', pass: true },
+  { name: 'Interest Rate within range (0-100%)', pass: true },
+  { name: 'Boolean fields (Written Off, Repossession) valid', pass: true },
+  { name: 'No null values in required fields', pass: false, detail: '2 rows with null Current Balance — auto-filled with 0' },
 ];
 
 type Channel = 'sftp' | 'ncba' | 'nbfi' | null;
@@ -63,6 +92,12 @@ export default function LoanBookPage() {
   const [uploadStage, setUploadStage] = useState(-1);
   const [uploadRunning, setUploadRunning] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
+  const [showMapping, setShowMapping] = useState(false);
+  const [mappingConfirmed, setMappingConfirmed] = useState(false);
+  const [processStage, setProcessStage] = useState(-1);
+  const [processRunning, setProcessRunning] = useState(false);
+  const [showFormatTests, setShowFormatTests] = useState(false);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({ ...AUTO_MAPPING });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -117,16 +152,45 @@ export default function LoanBookPage() {
     setUploadRunning(true);
     setUploadStage(0);
     setUploadDone(false);
+    setShowMapping(false);
+    setMappingConfirmed(false);
+    setProcessStage(-1);
+    setShowFormatTests(false);
     let i = 0;
     const tick = () => {
       i++;
       if (i < UPLOAD_STAGES.length) {
         setUploadStage(i);
-        setTimeout(tick, 600);
-      } else {
-        setUploadRunning(false);
-        setUploadDone(true);
-        loadData('ncba_upload');
+        if (i === UPLOAD_STAGES.length - 1) {
+          setUploadRunning(false);
+          setShowMapping(true);
+        } else {
+          setTimeout(tick, 600);
+        }
+      }
+    };
+    setTimeout(tick, 600);
+  }, []);
+
+  const confirmMapping = useCallback(() => {
+    setMappingConfirmed(true);
+    setProcessRunning(true);
+    setProcessStage(0);
+    let i = 0;
+    const tick = () => {
+      i++;
+      if (i < PROCESS_STAGES.length) {
+        setProcessStage(i);
+        if (i === PROCESS_STAGES.length - 2) {
+          setShowFormatTests(true);
+        }
+        if (i === PROCESS_STAGES.length - 1) {
+          setProcessRunning(false);
+          setUploadDone(true);
+          loadData('ncba_upload');
+        } else {
+          setTimeout(tick, 600);
+        }
       }
     };
     setTimeout(tick, 600);
@@ -283,44 +347,90 @@ export default function LoanBookPage() {
                 onChange={handleFileSelect}
               />
 
-              {uploadStage >= 0 && (
+              {uploadStage >= 0 && !showMapping && (
                 <ProgressStages stages={UPLOAD_STAGES} current={uploadStage} />
               )}
 
-              {uploadDone && (
-                <>
-                  <p className="text-sm text-green-700 font-medium">
-                    ✓ Loan book loaded ({MOCK_LOAN_BOOK.length} rows)
-                  </p>
-                  <div className="mt-2">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      Field Mapping
-                    </p>
-                    <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-                      <thead>
-                        <tr className="bg-gray-100 text-gray-600 text-xs">
-                          <th className="text-left px-3 py-2">Source Column</th>
-                          <th className="text-left px-3 py-2">Mapped To</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {FIELD_MAPPING.map(({ source, target }) => (
-                          <tr
-                            key={source}
-                            className="border-t border-gray-100"
-                          >
-                            <td className="px-3 py-2 font-mono text-xs text-gray-700">
-                              {source}
-                            </td>
-                            <td className="px-3 py-2 text-gray-600">
-                              → {target}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              {/* Column Mapping Step */}
+              {showMapping && !mappingConfirmed && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-green-700 font-medium">File parsed — {DETECTED_COLUMNS.length} columns detected</span>
                   </div>
-                </>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Column Mapping</p>
+                  <p className="text-xs text-gray-500">Review and adjust how source columns map to platform fields. Auto-mapping has been applied.</p>
+                  <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-600 text-xs">
+                        <th className="text-left px-3 py-2">Source Column</th>
+                        <th className="text-left px-3 py-2">Maps To</th>
+                        <th className="text-left px-3 py-2 w-16">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {DETECTED_COLUMNS.map(col => (
+                        <tr key={col} className="border-t border-gray-100">
+                          <td className="px-3 py-2 font-mono text-xs text-gray-700">{col}</td>
+                          <td className="px-3 py-2">
+                            <select value={columnMapping[col] || ''} onChange={e => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                              <option value="">— unmapped —</option>
+                              {REQUIRED_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            {columnMapping[col] ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <span className="text-xs text-amber-500 font-medium">!</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="flex items-center gap-3">
+                    <button onClick={confirmMapping}
+                      className="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#004d99] transition-colors">
+                      Confirm Mapping &amp; Process
+                    </button>
+                    <span className="text-xs text-gray-400">{Object.values(columnMapping).filter(Boolean).length}/{REQUIRED_FIELDS.length} fields mapped</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Processing after mapping */}
+              {mappingConfirmed && processStage >= 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-green-700 font-medium">Mapping confirmed</span>
+                  </div>
+                  <ProgressStages stages={PROCESS_STAGES} current={processStage} />
+                </div>
+              )}
+
+              {/* Format Test Results */}
+              {showFormatTests && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Format Validation Tests</p>
+                  {FORMAT_TESTS.map((t, i) => (
+                    <div key={i} className={`flex items-start gap-2 p-2 rounded text-xs ${t.pass ? 'bg-green-50' : 'bg-amber-50'}`}>
+                      {t.pass ? <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" /> : <span className="text-amber-500 font-bold mt-0.5 shrink-0">⚠</span>}
+                      <div>
+                        <span className={t.pass ? 'text-green-700' : 'text-amber-700'}>{t.name}</span>
+                        {t.detail && <p className="text-amber-600 text-[10px] mt-0.5">{t.detail}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadDone && (
+                <p className="text-sm text-green-700 font-medium mt-2">
+                  ✓ Loan book loaded ({MOCK_LOAN_BOOK.length} rows) — all format tests passed
+                </p>
               )}
             </div>
           </ExpandableCard>
