@@ -2,10 +2,11 @@
 
 import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import { Plus, ChevronRight, Building2, TrendingUp } from 'lucide-react';
+import { Plus, ChevronRight, Building2, TrendingUp, Trash2 } from 'lucide-react';
+import type { NBFIRecord } from '@/lib/types';
 
 function formatKES(amount: number) {
   return `KES ${(amount / 1000).toFixed(0)}K`;
@@ -19,23 +20,34 @@ function StatusBadge({ status }: { status: string }) {
     pending_review: 'Pending Review',
     approved: 'Approved',
     rejected: 'Rejected',
+    pool_selected: 'Pool Selected',
+    setup_complete: 'Setup Complete',
+    monitoring: 'Monitoring',
   };
   return <span className={`badge badge-${status}`}>{labels[status] || status}</span>;
 }
 
 export default function DashboardPage() {
-  const { user, nbfis } = useApp();
+  const { user, nbfis, deleteNBFI } = useApp();
   const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<NBFIRecord | null>(null);
 
   useEffect(() => {
     if (!user) router.push('/');
   }, [user, router]);
 
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteNBFI(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  };
+
   if (!user) return null;
 
   const stats = {
     total: nbfis.length,
-    approved: nbfis.filter(n => n.status === 'approved').length,
+    monitoring: nbfis.filter(n => ['approved', 'pool_selected', 'setup_complete', 'monitoring'].includes(n.status)).length,
     pending: nbfis.filter(n => n.status === 'pending_review').length,
     draft: nbfis.filter(n => ['draft', 'uploading', 'spreading'].includes(n.status)).length,
   };
@@ -83,7 +95,7 @@ export default function DashboardPage() {
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Funding Required</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Onboarded</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3"></th>
+                <th className="px-6 py-3 w-24 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -118,12 +130,34 @@ export default function DashboardPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{nbfi.dateOnboarded}</td>
                   <td className="px-6 py-4"><StatusBadge status={nbfi.status} /></td>
-                  <td className="px-6 py-4"><ChevronRight className="w-4 h-4 text-gray-300" /></td>
+                  <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      {(nbfi.status === 'approved' || nbfi.status === 'pending_review') && (
+                        <Link
+                          href={`/nbfi/${nbfi.id}/loan-book`}
+                          className="text-xs text-[#003366] font-medium hover:underline whitespace-nowrap"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          Loan book & EDA
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(nbfi)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete organisation"
+                        aria-label="Delete organisation"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-gray-300 inline-block" />
+                    </div>
+                  </td>
                 </tr>
               ))}
               {nbfis.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 text-sm">
                     No NBFIs onboarded yet. Click &ldquo;Onboard New NBFI&rdquo; to get started.
                   </td>
                 </tr>
@@ -131,6 +165,34 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Delete confirmation modal */}
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setDeleteTarget(null)}>
+            <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900">Delete organisation?</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                &ldquo;{deleteTarget.name}&rdquo; will be removed. This cannot be undone.
+              </p>
+              <div className="mt-6 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
