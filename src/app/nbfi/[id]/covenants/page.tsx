@@ -103,18 +103,31 @@ export default function CovenantsPage() {
           &larr; Dashboard
         </Link>
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-800">Covenant Monitoring — {nbfi.name}</h1>
-            <p className="text-sm text-gray-500 mt-1">Real-time covenant compliance and provisioning analysis</p>
+            <p className="text-sm text-gray-500 mt-1">Real-time covenant compliance and provisioning analysis (read-only)</p>
           </div>
-          <button
-            onClick={() => setShowReview(!showReview)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#004d99] transition-colors"
-          >
-            <FileBarChart className="w-4 h-4" />
-            {showReview ? 'Hide' : 'Generate'} Quarterly Review
-          </button>
+          <div className="flex gap-2">
+            <Link href={`/nbfi/${id}/setup`}
+              className="flex items-center gap-2 px-4 py-2 border border-[#003366] text-[#003366] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors">
+              <Eye className="w-4 h-4" /> Edit Covenants (Step 3)
+            </Link>
+            <button
+              onClick={() => setShowReview(!showReview)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#004d99] transition-colors"
+            >
+              <FileBarChart className="w-4 h-4" />
+              {showReview ? 'Hide' : 'Generate'} Quarterly Review
+            </button>
+          </div>
+        </div>
+        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+          <Eye className="w-4 h-4 text-blue-500" />
+          <p className="text-xs text-blue-700">
+            This is a <strong>monitoring view</strong>. To edit covenant definitions, provisioning rules, or security settings, go to{' '}
+            <Link href={`/nbfi/${id}/setup`} className="underline font-medium">Step 3: Covenant &amp; Doc Setup</Link>.
+          </p>
         </div>
 
         {/* Covenant Status Cards */}
