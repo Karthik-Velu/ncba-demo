@@ -300,6 +300,9 @@ export default function SetupPage() {
 
         {activeTab === 'provisioning' && (
           <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+              Provision matrix by DPD band; aligns with Stage 2/3 lifetime ECL for defaulted/watch buckets. Normal = Stage 1 (12m); Watch, Substandard, Doubtful, Loss = Stage 2/3 (lifetime).
+            </p>
             <div className="grid grid-cols-2 gap-6">
               {[
                 { title: 'NBFI Policy', rules: nbfiRules, setter: setNbfiRules },

@@ -8,7 +8,7 @@ import { MonitoringData, LoanLevelRow } from '@/lib/types';
 import {
   Activity, Users, Banknote, TrendingUp, TrendingDown,
   Globe, Target, Calendar, CheckCircle2, Clock, Layers, Building2,
-  Filter,
+  Filter, ChevronDown, Download, X,
 } from 'lucide-react';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import { LineChart, Line } from 'recharts';
@@ -22,8 +22,69 @@ import mockMonitoring from '../../../../../data/mock-monitoring.json';
 
 const COLORS = ['#003366', '#0066cc', '#0099ff', '#00ccff', '#66e0ff', '#339966', '#cc6633'];
 
+// ECL / roll-rate (DRR and Gross Loss Rate by DPD band) - aligned with Oracle OFS loan-loss-forecasting
+const LOSS_RATES: Record<string, number> = {
+  Current: 0, '1-30': 0.01, '31-60': 0.1, '61-90': 0.25, '91-180': 0.5, '180+': 1.0,
+};
+const TICKET_SIZES = ['<50K', '50-100K', '100-200K', '200K+'] as const;
+
+function ticketBucket(amount: number): string {
+  if (amount < 50000) return '<50K';
+  if (amount < 100000) return '50-100K';
+  if (amount < 200000) return '100-200K';
+  return '200K+';
+}
+
 type MonLevel = 'level1' | 'level2';
 type MonScope = 'transaction' | 'nbfi' | 'portfolio';
+
+type LoanWithNbfi = LoanLevelRow & { _nbfiId?: string };
+
+function applyFilters<T extends LoanLevelRow>(
+  rows: T[],
+  filters: { product: string[]; geography: string[]; segment: string[]; dpdBuckets: string[]; ticketSize: string[] }
+): T[] {
+  return rows.filter(r => {
+    const bucket = getDpdBucket(r.dpdAsOfReportingDate);
+    const ticket = ticketBucket(r.loanDisbursedAmount ?? r.currentBalance);
+    if (filters.product.length && !filters.product.includes(r.product ?? 'Unknown')) return false;
+    if (filters.geography.length && !filters.geography.includes(r.geography ?? 'Unknown')) return false;
+    if (filters.segment.length && !filters.segment.includes(r.segment ?? 'Unknown')) return false;
+    if (filters.dpdBuckets.length && !filters.dpdBuckets.includes(bucket)) return false;
+    if (filters.ticketSize.length && !filters.ticketSize.includes(ticket)) return false;
+    return true;
+  });
+}
+
+function FilterSelect({ label, options, selected, onChange }: { label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const allSelected = selected.length === 0 || selected.length === options.length;
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 min-w-[120px]">
+        <span className="text-gray-500 text-xs">{label}</span>
+        <span className="font-medium text-gray-800 truncate">{allSelected ? 'All' : `${selected.length}`}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-auto shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-48 max-h-52 overflow-y-auto">
+          <button type="button" onClick={() => { onChange([]); setOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50">Select all</button>
+          {options.map(opt => (
+            <label key={opt} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" checked={selected.length === 0 || selected.includes(opt)} onChange={() => {
+                if (selected.length === 0) onChange(options.filter(o => o !== opt));
+                else if (selected.includes(opt)) { const n = selected.filter(s => s !== opt); onChange(n.length === 0 ? [] : n); }
+                else { const n = [...selected, opt]; onChange(n.length === options.length ? [] : n); }
+              }} className="rounded border-gray-300 text-[#003366]" />
+              {opt}
+            </label>
+          ))}
+          <button type="button" onClick={() => setOpen(false)} className="w-full text-center text-xs text-gray-500 py-1 border-t mt-1">Close</button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MonitoringPage() {
   const { user, getNBFI, loanBookData, nbfis } = useApp();
@@ -32,6 +93,12 @@ export default function MonitoringPage() {
   const id = params.id as string;
   const [level, setLevel] = useState<MonLevel>('level1');
   const [scope, setScope] = useState<MonScope>('transaction');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterProduct, setFilterProduct] = useState<string[]>([]);
+  const [filterGeography, setFilterGeography] = useState<string[]>([]);
+  const [filterSegment, setFilterSegment] = useState<string[]>([]);
+  const [filterDpdBuckets, setFilterDpdBuckets] = useState<string[]>([]);
+  const [filterTicketSize, setFilterTicketSize] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) router.push('/');
@@ -50,24 +117,6 @@ export default function MonitoringPage() {
   const wholesale = mon.wholesaleLoan;
   const impact = mon.impactMetrics;
 
-  const portfolioStats = useMemo(() => {
-    if (loans.length === 0) {
-      return {
-        totalLoans: mon.liveLoans || 0,
-        totalBalance: mon.principalOutstanding || 0,
-        avgBalance: mon.principalOutstanding && mon.liveLoans ? Math.round(mon.principalOutstanding / mon.liveLoans) : 0,
-        collectionEff: mon.collectionEfficiency || 0,
-      };
-    }
-    const totalBalance = loans.reduce((s, r) => s + r.currentBalance, 0);
-    return {
-      totalLoans: loans.length,
-      totalBalance,
-      avgBalance: Math.round(totalBalance / loans.length),
-      collectionEff: mon.collectionEfficiency || 98.2,
-    };
-  }, [loans, mon]);
-
   const allLoans = useMemo(() => {
     const all: LoanLevelRow[] = [];
     for (const nId of Object.keys(loanBookData)) {
@@ -76,37 +125,164 @@ export default function MonitoringPage() {
     return all;
   }, [loanBookData]);
 
-  const portfolioWideStats = useMemo(() => {
-    if (allLoans.length === 0) return null;
-    const totalBal = allLoans.reduce((s, r) => s + r.currentBalance, 0);
-    const par30 = allLoans.filter(r => r.dpdAsOfReportingDate > 30).length;
-    const par90 = allLoans.filter(r => r.dpdAsOfReportingDate > 90).length;
-    const nbfiCount = new Set(Object.keys(loanBookData).filter(k => loanBookData[k].length > 0)).size;
+  const allLoansWithNbfi = useMemo((): LoanWithNbfi[] => {
+    const out: LoanWithNbfi[] = [];
+    for (const nId of Object.keys(loanBookData)) {
+      for (const r of loanBookData[nId]) {
+        out.push({ ...r, _nbfiId: nId });
+      }
+    }
+    return out;
+  }, [loanBookData]);
+
+  const filterObj = useMemo(() => ({
+    product: filterProduct,
+    geography: filterGeography,
+    segment: filterSegment,
+    dpdBuckets: filterDpdBuckets,
+    ticketSize: filterTicketSize,
+  }), [filterProduct, filterGeography, filterSegment, filterDpdBuckets, filterTicketSize]);
+
+  const filteredLoans = useMemo(() => applyFilters(loans, filterObj), [loans, filterObj]);
+  const filteredTagged = useMemo(() => applyFilters(allLoansWithNbfi, filterObj), [allLoansWithNbfi, filterObj]);
+
+  const activeFilterCount = [filterProduct, filterGeography, filterSegment, filterDpdBuckets, filterTicketSize].reduce(
+    (n, arr) => n + (arr.length > 0 ? 1 : 0), 0
+  );
+
+  const portfolioStats = useMemo(() => {
+    const base = filteredLoans.length === 0 && loans.length === 0 ? [] : filteredLoans;
+    if (base.length === 0) {
+      return {
+        totalLoans: mon.liveLoans || 0,
+        totalBalance: mon.principalOutstanding || 0,
+        avgBalance: mon.principalOutstanding && mon.liveLoans ? Math.round(mon.principalOutstanding / mon.liveLoans) : 0,
+        collectionEff: mon.collectionEfficiency || 0,
+        nplRatioPct: 0,
+      };
+    }
+    const totalBalance = base.reduce((s, r) => s + r.currentBalance, 0);
+    const nplBal = base.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
     return {
-      totalLoans: allLoans.length, totalBal, nbfiCount,
-      par30Pct: (par30 / allLoans.length * 100).toFixed(1),
-      par90Pct: (par90 / allLoans.length * 100).toFixed(1),
-      avgBal: Math.round(totalBal / allLoans.length),
+      totalLoans: base.length,
+      totalBalance,
+      avgBalance: Math.round(totalBalance / base.length),
+      collectionEff: mon.collectionEfficiency || 98.2,
+      nplRatioPct: totalBalance > 0 ? (nplBal / totalBalance * 100) : 0,
     };
-  }, [allLoans, loanBookData]);
+  }, [filteredLoans, loans.length, mon]);
+
+  const portfolioWideStats = useMemo(() => {
+    if (filteredTagged.length === 0) return null;
+    const totalBal = filteredTagged.reduce((s, r) => s + r.currentBalance, 0);
+    const par30 = filteredTagged.filter(r => r.dpdAsOfReportingDate > 30).length;
+    const par90 = filteredTagged.filter(r => r.dpdAsOfReportingDate > 90).length;
+    const nplBal = filteredTagged.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
+    const nbfiCount = new Set(filteredTagged.map(r => r._nbfiId)).size;
+    return {
+      totalLoans: filteredTagged.length, totalBal, nbfiCount,
+      par30Pct: (par30 / filteredTagged.length * 100).toFixed(1),
+      par90Pct: (par90 / filteredTagged.length * 100).toFixed(1),
+      nplRatioPct: totalBal > 0 ? (nplBal / totalBal * 100) : 0,
+      avgBal: Math.round(totalBal / filteredTagged.length),
+    };
+  }, [filteredTagged]);
 
   const portfolioDpdDist = useMemo(() => {
+    const source = scope === 'portfolio' ? filteredTagged : filteredLoans;
     const map: Record<string, number> = {};
     DPD_BUCKETS.forEach(b => (map[b] = 0));
-    allLoans.forEach(r => { map[getDpdBucket(r.dpdAsOfReportingDate)] += r.currentBalance; });
+    source.forEach(r => { map[getDpdBucket(r.dpdAsOfReportingDate)] += r.currentBalance; });
     return DPD_BUCKETS.map(b => ({ bucket: b, balance: map[b] }));
-  }, [allLoans]);
+  }, [scope, filteredTagged, filteredLoans]);
+
+  const eclSummary = useMemo(() => {
+    const source = scope === 'portfolio' ? filteredTagged : filteredLoans;
+    if (source.length === 0) return { ecl12m: 0, eclLifetime: 0 };
+    let totalBal = 0, loss12m = 0, lossLifetime = 0;
+    for (const r of source) {
+      const bucket = getDpdBucket(r.dpdAsOfReportingDate);
+      const rate = LOSS_RATES[bucket] ?? 0;
+      totalBal += r.currentBalance;
+      loss12m += r.currentBalance * rate * 0.12;
+      lossLifetime += r.currentBalance * rate;
+    }
+    return { ecl12m: loss12m, eclLifetime: lossLifetime, totalBal };
+  }, [scope, filteredTagged, filteredLoans]);
+
+  const concentration = useMemo(() => {
+    const source = scope === 'portfolio' ? filteredTagged : filteredLoans;
+    if (source.length === 0) return { topGeo: [], topProduct: [] };
+    const byGeo: Record<string, number> = {};
+    const byProduct: Record<string, number> = {};
+    source.forEach(r => {
+      const g = r.geography ?? 'Unknown';
+      const p = r.product ?? 'Unknown';
+      byGeo[g] = (byGeo[g] ?? 0) + r.currentBalance;
+      byProduct[p] = (byProduct[p] ?? 0) + r.currentBalance;
+    });
+    const total = source.reduce((s, r) => s + r.currentBalance, 0);
+    const topGeo = Object.entries(byGeo).map(([name, bal]) => ({ name, pct: total > 0 ? (bal / total * 100) : 0 })).sort((a, b) => b.pct - a.pct).slice(0, 3);
+    const topProduct = Object.entries(byProduct).map(([name, bal]) => ({ name, pct: total > 0 ? (bal / total * 100) : 0 })).sort((a, b) => b.pct - a.pct).slice(0, 3);
+    return { topGeo, topProduct };
+  }, [scope, filteredTagged, filteredLoans]);
+
+  const nbfiGroups = useMemo(() => {
+    const m: Record<string, LoanWithNbfi[]> = {};
+    filteredTagged.forEach(r => {
+      const nid = r._nbfiId ?? '';
+      if (!m[nid]) m[nid] = [];
+      m[nid].push(r);
+    });
+    return m;
+  }, [filteredTagged]);
 
   const trendData = useMemo(() => {
     return [
-      { month: 'Sep', par30: 8.2, par90: 3.1, collection: 97.5 },
-      { month: 'Oct', par30: 7.8, par90: 3.0, collection: 97.8 },
-      { month: 'Nov', par30: 8.5, par90: 3.4, collection: 97.2 },
-      { month: 'Dec', par30: 9.1, par90: 3.8, collection: 96.9 },
-      { month: 'Jan', par30: 8.7, par90: 3.5, collection: 97.4 },
-      { month: 'Feb', par30: parseFloat(portfolioWideStats?.par30Pct || '8.5'), par90: parseFloat(portfolioWideStats?.par90Pct || '3.3'), collection: 97.6 },
+      { month: 'Sep', par30: 8.2, par90: 3.1, collection: 97.5, npl: 3.1 },
+      { month: 'Oct', par30: 7.8, par90: 3.0, collection: 97.8, npl: 3.0 },
+      { month: 'Nov', par30: 8.5, par90: 3.4, collection: 97.2, npl: 3.4 },
+      { month: 'Dec', par30: 9.1, par90: 3.8, collection: 96.9, npl: 3.8 },
+      { month: 'Jan', par30: 8.7, par90: 3.5, collection: 97.4, npl: 3.5 },
+      { month: 'Feb', par30: parseFloat(portfolioWideStats?.par30Pct || '8.5'), par90: parseFloat(portfolioWideStats?.par90Pct || '3.3'), collection: 97.6, npl: parseFloat(portfolioWideStats?.par90Pct || '3.3') },
     ];
   }, [portfolioWideStats]);
+
+  const sourceForFilterOptions = scope === 'portfolio' ? allLoans : loans;
+  const geoOptions = useMemo(() => [...new Set(sourceForFilterOptions.map(r => r.geography || 'Unknown'))].sort(), [sourceForFilterOptions]);
+  const prodOptions = useMemo(() => [...new Set(sourceForFilterOptions.map(r => r.product || 'Unknown'))].sort(), [sourceForFilterOptions]);
+  const segOptions = useMemo(() => [...new Set(sourceForFilterOptions.map(r => r.segment || 'Unknown'))].sort(), [sourceForFilterOptions]);
+
+  const clearFilters = () => {
+    setFilterProduct([]);
+    setFilterGeography([]);
+    setFilterSegment([]);
+    setFilterDpdBuckets([]);
+    setFilterTicketSize([]);
+  };
+
+  const handleExport = () => {
+    const source = scope === 'portfolio' ? filteredTagged : filteredLoans;
+    const headers = ['loanId', 'product', 'geography', 'segment', 'currentBalance', 'dpdAsOfReportingDate', 'dpdBucket', ...(scope === 'portfolio' ? ['nbfiId'] : [])];
+    const rows = source.map(r => [
+      r.loanId,
+      r.product ?? '',
+      r.geography ?? '',
+      r.segment ?? '',
+      r.currentBalance,
+      r.dpdAsOfReportingDate,
+      getDpdBucket(r.dpdAsOfReportingDate),
+      ...(scope === 'portfolio' && '_nbfiId' in r ? [(r as LoanWithNbfi)._nbfiId ?? ''] : []),
+    ]);
+    const csv = [headers.join(','), ...rows.map(row => row.map(c => (typeof c === 'string' && c.includes(',') ? `"${c}"` : c)).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `risk-dashboard-${scope}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -123,6 +299,20 @@ export default function MonitoringPage() {
               {scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (all transactions)` : 'NCBA Full Portfolio'}
             </p>
           </div>
+          <button type="button" onClick={handleExport} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+        <div className="flex items-center justify-between mb-4 hidden">
+          <div>
+            <h1 className="text-xl font-bold text-gray-800 hidden">Risk Monitoring Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (all transactions)` : 'NCBA Full Portfolio'}
+            </p>
+          </div>
+          <button type="button" onClick={handleExport} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
         </div>
 
         {/* Scope Selector */}
@@ -155,6 +345,44 @@ export default function MonitoringPage() {
           )}
         </div>
 
+        {/* Filters */}
+        <div className="mb-4">
+          <button type="button" onClick={() => setFiltersOpen(!filtersOpen)} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Filter className="w-4 h-4" /> Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+          </button>
+          {filtersOpen && (
+            <div className="mt-3 p-4 bg-white border border-gray-200 rounded-xl flex flex-wrap gap-3">
+              <FilterSelect label="Product" options={prodOptions} selected={filterProduct} onChange={setFilterProduct} />
+              <FilterSelect label="Geography" options={geoOptions} selected={filterGeography} onChange={setFilterGeography} />
+              <FilterSelect label="Segment" options={segOptions} selected={filterSegment} onChange={setFilterSegment} />
+              <FilterSelect label="DPD Bucket" options={[...DPD_BUCKETS]} selected={filterDpdBuckets} onChange={setFilterDpdBuckets} />
+              <FilterSelect label="Ticket" options={[...TICKET_SIZES]} selected={filterTicketSize} onChange={setFilterTicketSize} />
+              <button type="button" onClick={clearFilters} className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                <X className="w-4 h-4" /> Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="mb-4">
+          <button type="button" onClick={() => setFiltersOpen(!filtersOpen)} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Filter className="w-4 h-4" /> Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+          </button>
+          {filtersOpen && (
+            <div className="mt-3 p-4 bg-white border border-gray-200 rounded-xl flex flex-wrap gap-3">
+              <FilterSelect label="Product" options={prodOptions} selected={filterProduct} onChange={setFilterProduct} />
+              <FilterSelect label="Geography" options={geoOptions} selected={filterGeography} onChange={setFilterGeography} />
+              <FilterSelect label="Segment" options={segOptions} selected={filterSegment} onChange={setFilterSegment} />
+              <FilterSelect label="DPD Bucket" options={[...DPD_BUCKETS]} selected={filterDpdBuckets} onChange={setFilterDpdBuckets} />
+              <FilterSelect label="Ticket" options={[...TICKET_SIZES]} selected={filterTicketSize} onChange={setFilterTicketSize} />
+              <button type="button" onClick={clearFilters} className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                <X className="w-4 h-4" /> Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Alerts for this transaction */}
         {scope !== 'portfolio' && (
           <div className="mb-6">
@@ -166,12 +394,31 @@ export default function MonitoringPage() {
         {/* Portfolio-level view */}
         {scope === 'portfolio' && portfolioWideStats && (
           <>
-            <div className="grid grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-6 gap-4 mb-6">
               <StatCard icon={<Layers className="w-5 h-5 text-[#003366]" />} label="Active NBFIs" value={portfolioWideStats.nbfiCount.toString()} />
               <StatCard icon={<Users className="w-5 h-5 text-green-500" />} label="Total Loans" value={portfolioWideStats.totalLoans.toLocaleString()} />
               <StatCard icon={<Banknote className="w-5 h-5 text-blue-500" />} label="Total Balance" value={`KES ${(portfolioWideStats.totalBal / 1e6).toFixed(0)}M`} />
               <StatCard icon={<TrendingDown className="w-5 h-5 text-amber-500" />} label="PAR 30+" value={`${portfolioWideStats.par30Pct}%`} trend={parseFloat(portfolioWideStats.par30Pct) > 10 ? 'down' : 'up'} />
               <StatCard icon={<Activity className="w-5 h-5 text-red-500" />} label="PAR 90+" value={`${portfolioWideStats.par90Pct}%`} trend={parseFloat(portfolioWideStats.par90Pct) > 5 ? 'down' : 'up'} />
+              <StatCard icon={<Activity className="w-5 h-5 text-orange-500" />} label="NPL Ratio" value={`${portfolioWideStats.nplRatioPct.toFixed(1)}%`} trend={portfolioWideStats.nplRatioPct > 5 ? 'down' : 'up'} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 className="text-xs font-bold text-[#003366] mb-2">Roll-rate / ECL Summary</h3>
+                <p className="text-[10px] text-gray-500 mb-2" title="DRR and Gross Loss Rate by DPD band">12-month ECL and Lifetime ECL (simplified; DRR / Gross Loss Rate by DPD band).</p>
+                <div className="flex gap-4">
+                  <div><p className="text-[10px] text-gray-500">12-month ECL</p><p className="text-lg font-bold text-gray-900">KES {(eclSummary.ecl12m / 1e6).toFixed(2)}M</p></div>
+                  <div><p className="text-[10px] text-gray-500">Lifetime ECL</p><p className="text-lg font-bold text-gray-900">KES {(eclSummary.eclLifetime / 1e6).toFixed(2)}M</p></div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 className="text-xs font-bold text-[#003366] mb-2">Concentration (Top 3)</h3>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><p className="text-[10px] text-gray-500">Geography</p>{concentration.topGeo.map((g, i) => <p key={g.name} className="font-medium">{g.name} {g.pct.toFixed(0)}%</p>)}</div>
+                  <div><p className="text-[10px] text-gray-500">Product</p>{concentration.topProduct.map((p, i) => <p key={p.name} className="font-medium">{p.name} {p.pct.toFixed(0)}%</p>)}</div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-6">
@@ -225,8 +472,9 @@ export default function MonitoringPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {nbfis.filter(n => loanBookData[n.id]?.length > 0).map(n => {
-                    const nLoans = loanBookData[n.id];
+                  {Object.entries(nbfiGroups).map(([nid, nLoans]) => {
+                    const n = nbfis.find(x => x.id === nid);
+                    if (!n || nLoans.length === 0) return null;
                     const bal = nLoans.reduce((s, r) => s + r.currentBalance, 0);
                     const p30 = nLoans.filter(r => r.dpdAsOfReportingDate > 30).length;
                     const p90 = nLoans.filter(r => r.dpdAsOfReportingDate > 90).length;
@@ -272,7 +520,7 @@ export default function MonitoringPage() {
         {(scope === 'transaction' || scope === 'nbfi') && level === 'level1' && (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-5 gap-4 mb-6">
               <StatCard
                 icon={<Banknote className="w-5 h-5 text-blue-500" />}
                 label="Principal Outstanding"
@@ -294,6 +542,30 @@ export default function MonitoringPage() {
                 label="Avg Loan Size"
                 value={`KES ${portfolioStats.avgBalance.toLocaleString()}`}
               />
+              <StatCard
+                icon={<Activity className="w-5 h-5 text-orange-500" />}
+                label="NPL Ratio"
+                value={`${portfolioStats.nplRatioPct.toFixed(1)}%`}
+                trend={portfolioStats.nplRatioPct > 5 ? 'down' : 'up'}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 className="text-xs font-bold text-[#003366] mb-2">Roll-rate / ECL Summary</h3>
+                <p className="text-[10px] text-gray-500 mb-2" title="DRR and Gross Loss Rate by DPD band">12-month ECL and Lifetime ECL (simplified; DRR / Gross Loss Rate by DPD band).</p>
+                <div className="flex gap-4">
+                  <div><p className="text-[10px] text-gray-500">12-month ECL</p><p className="text-lg font-bold text-gray-900">KES {(eclSummary.ecl12m / 1e6).toFixed(2)}M</p></div>
+                  <div><p className="text-[10px] text-gray-500">Lifetime ECL</p><p className="text-lg font-bold text-gray-900">KES {(eclSummary.eclLifetime / 1e6).toFixed(2)}M</p></div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 className="text-xs font-bold text-[#003366] mb-2">Concentration (Top 3)</h3>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><p className="text-[10px] text-gray-500">Geography</p>{concentration.topGeo.map((g) => <p key={g.name} className="font-medium">{g.name} {g.pct.toFixed(0)}%</p>)}</div>
+                  <div><p className="text-[10px] text-gray-500">Product</p>{concentration.topProduct.map((p) => <p key={p.name} className="font-medium">{p.name} {p.pct.toFixed(0)}%</p>)}</div>
+                </div>
+              </div>
             </div>
 
             {/* Delinquency by Vintage */}

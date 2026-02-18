@@ -308,19 +308,19 @@ export default function EDAPage() {
           <div className={`rounded-xl border p-6 ${loss.rate > 0.05 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
             <h2 className="text-sm font-bold text-[#003366] flex items-center gap-2 mb-4">
               {loss.rate > 0.05 ? <AlertTriangle className="w-4 h-4 text-red-500" /> : <CheckCircle2 className="w-4 h-4 text-green-500" />}
-              Estimated Loss Summary
+              Estimated Loss Summary (ECL)
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-gray-500">Expected Loss Amount</p>
+                <p className="text-xs text-gray-500">Lifetime ECL (simplified) Amount</p>
                 <p className="text-2xl font-bold text-gray-900">KES {(loss.amount / 1e6).toFixed(1)}M</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Expected Loss Rate</p>
+                <p className="text-xs text-gray-500">Lifetime ECL (simplified) Rate</p>
                 <p className={`text-2xl font-bold ${loss.rate > 0.05 ? 'text-red-700' : 'text-green-700'}`}>{(loss.rate * 100).toFixed(2)}%</p>
               </div>
               <div className="col-span-2">
-                <p className="text-[10px] text-gray-400">Methodology: DPD-bucket-based loss rates (Current 0%, 1-30 1%, 31-60 10%, 61-90 25%, 91-180 50%, 180+ 100%)</p>
+                <p className="text-[10px] text-gray-400">Roll rate methodology: Default Roll Rate (DRR) and Gross Loss Rate by DPD band; transition matrix and segmentation (product, geography, segment, ticket size).</p>
               </div>
             </div>
           </div>
@@ -331,7 +331,7 @@ export default function EDAPage() {
           <h2 className="text-sm font-bold text-[#003366] flex items-center gap-2 mb-4"><BarChart3 className="w-4 h-4" /> Roll-Rate Analysis</h2>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Transition Matrix (% migrating per period)</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">Transition Matrix (DPD band)</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { Bell, AlertTriangle, TrendingDown, CheckCircle2, FileText, Database, X } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Bell, AlertTriangle, CheckCircle2, FileText, X } from 'lucide-react';
 import Link from 'next/link';
 
 export type AlertSeverity = 'critical' | 'warning' | 'info' | 'success';
@@ -75,72 +76,106 @@ export function useAlerts() {
   return { alerts, unreadCount };
 }
 
+const PANEL_WIDTH = 384;
+const PANEL_MAX_HEIGHT = 384;
+
 export default function NotificationBell() {
   const { alerts, unreadCount } = useAlerts();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = typeof window !== 'undefined' ? window.innerHeight - rect.bottom : 400;
+    const openUp = spaceBelow < PANEL_MAX_HEIGHT + 16;
+    setPosition({
+      top: openUp ? rect.top - PANEL_MAX_HEIGHT - 8 : rect.bottom + 8,
+      left: Math.min(rect.left, Math.max(0, (typeof window !== 'undefined' ? window.innerWidth : 1024) - PANEL_WIDTH)),
+    });
+  }, [open]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (!open) return;
+      if (buttonRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [open]);
 
   const displayed = filter === 'unread' ? alerts.filter(a => !a.read) : alerts;
 
+  const panelContent = open && (
+    <div
+      ref={panelRef}
+      className="fixed w-96 bg-white rounded-xl border border-gray-200 shadow-2xl overflow-hidden z-[9999]"
+      style={{
+        top: position.top,
+        left: position.left,
+        maxHeight: PANEL_MAX_HEIGHT,
+      }}
+    >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
+        <h3 className="text-sm font-bold text-gray-800">Notifications</h3>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setFilter('all')}
+            className={`text-xs px-2 py-1 rounded ${filter === 'all' ? 'bg-[#003366] text-white' : 'text-gray-500 hover:bg-gray-100'}`}>All</button>
+          <button onClick={() => setFilter('unread')}
+            className={`text-xs px-2 py-1 rounded ${filter === 'unread' ? 'bg-[#003366] text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+            Unread ({unreadCount})
+          </button>
+          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 bg-white">
+        {displayed.length === 0 ? (
+          <p className="p-6 text-center text-sm text-gray-400">No notifications</p>
+        ) : (
+          displayed.map(alert => {
+            const cfg = SEVERITY_CONFIG[alert.severity];
+            const Icon = cfg.icon;
+            return (
+              <div key={alert.id} className={`p-3 hover:bg-gray-50 ${!alert.read ? 'bg-blue-50/30' : ''}`}>
+                {alert.link ? (
+                  <Link href={alert.link} onClick={() => setOpen(false)} className="block">
+                    <AlertRow alert={alert} Icon={Icon} cfg={cfg} />
+                  </Link>
+                ) : (
+                  <AlertRow alert={alert} Icon={Icon} cfg={cfg} />
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-        <Bell className="w-5 h-5 text-gray-600" />
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="relative p-2 rounded-lg hover:bg-[#003366]/30 transition-colors"
+        aria-label="Notifications"
+      >
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
             {unreadCount}
           </span>
         )}
       </button>
-
-      {open && (
-        <div className="absolute right-0 top-12 w-96 bg-white rounded-xl border border-gray-200 shadow-2xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-800">Notifications</h3>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setFilter('all')}
-                className={`text-xs px-2 py-1 rounded ${filter === 'all' ? 'bg-[#003366] text-white' : 'text-gray-500 hover:bg-gray-100'}`}>All</button>
-              <button onClick={() => setFilter('unread')}
-                className={`text-xs px-2 py-1 rounded ${filter === 'unread' ? 'bg-[#003366] text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
-                Unread ({unreadCount})
-              </button>
-              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
-            {displayed.length === 0 ? (
-              <p className="p-6 text-center text-sm text-gray-400">No notifications</p>
-            ) : (
-              displayed.map(alert => {
-                const cfg = SEVERITY_CONFIG[alert.severity];
-                const Icon = cfg.icon;
-                return (
-                  <div key={alert.id} className={`p-3 hover:bg-gray-50 ${!alert.read ? 'bg-blue-50/30' : ''}`}>
-                    {alert.link ? (
-                      <Link href={alert.link} onClick={() => setOpen(false)} className="block">
-                        <AlertRow alert={alert} Icon={Icon} cfg={cfg} />
-                      </Link>
-                    ) : (
-                      <AlertRow alert={alert} Icon={Icon} cfg={cfg} />
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+      {typeof document !== 'undefined' && createPortal(panelContent, document.body)}
     </div>
   );
 }

@@ -127,8 +127,7 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
       title: 'Monitoring',
       steps: [
         { step: 5, label: 'Document Management', icon: FileText, href: `/nbfi/${nbfiId}/documents` },
-        { step: 6, label: 'Covenant Monitoring', icon: AlertTriangle, href: `/nbfi/${nbfiId}/covenants` },
-        { step: 7, label: 'Early Warnings', icon: TrendingUp, href: `/nbfi/${nbfiId}/early-warnings` },
+        { step: 6, label: 'Covenant & Early Warnings', icon: AlertTriangle, href: `/nbfi/${nbfiId}/covenants` },
         { step: 8, label: 'Risk Dashboard', icon: Activity, href: `/nbfi/${nbfiId}/monitoring` },
       ],
     },
@@ -256,31 +255,33 @@ function SidebarShell({ children, user, logout, title, subtitle }: {
 }) {
   return (
     <aside className="w-64 bg-[#00264d] min-h-screen flex flex-col text-white">
-      <div className="p-6 border-b border-[#003366]">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="w-6 h-6 text-blue-300" />
-          <span className="text-lg font-bold tracking-wide">{title}</span>
+      <div className="p-4 border-b border-[#003366]">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-6 h-6 text-blue-300 shrink-0" />
+              <span className="text-lg font-bold tracking-wide truncate">{title}</span>
+            </div>
+            <p className="text-xs text-blue-200 mt-1">{subtitle}</p>
+            <p className="text-[10px] text-blue-300/60 mt-0.5">Powered by Kaleidofin</p>
+          </div>
+          <div className="shrink-0 [&_button]:text-blue-300 [&_button:hover]:text-white [&_svg]:text-blue-300">
+            <NotificationBell />
+          </div>
         </div>
-        <p className="text-xs text-blue-200 mt-1">{subtitle}</p>
-        <p className="text-[10px] text-blue-300/60 mt-0.5">Powered by Kaleidofin</p>
       </div>
       {children}
       <div className="p-4 border-t border-[#003366]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-              {user.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div>
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-blue-300 capitalize flex items-center gap-1">
-                <FileSpreadsheet className="w-3 h-3" />
-                {user.role.replace(/_/g, ' ')}
-              </p>
-            </div>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+            {user.name.split(' ').map(n => n[0]).join('')}
           </div>
-          <div className="[&_button]:text-blue-300 [&_button:hover]:text-white [&_svg]:text-blue-300">
-            <NotificationBell />
+          <div>
+            <p className="text-sm font-medium">{user.name}</p>
+            <p className="text-xs text-blue-300 capitalize flex items-center gap-1">
+              <FileSpreadsheet className="w-3 h-3" />
+              {user.role.replace(/_/g, ' ')}
+            </p>
           </div>
         </div>
         <button onClick={logout} className="flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors">
