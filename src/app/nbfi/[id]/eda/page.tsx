@@ -13,39 +13,11 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts';
-
-const LOSS_RATES: Record<string, number> = {
-  'Current': 0, '1-30': 0.01, '31-60': 0.10, '61-90': 0.25, '91-180': 0.50, '180+': 1.0,
-};
-
-const TRANSITION_MATRIX: Record<string, Record<string, number>> = {
-  'Current': { 'Current': 0.92, '1-30': 0.08 },
-  '1-30':    { 'Current': 0.40, '1-30': 0.30, '31-60': 0.30 },
-  '31-60':   { '1-30': 0.15, '31-60': 0.35, '61-90': 0.50 },
-  '61-90':   { '31-60': 0.05, '61-90': 0.25, '91-180': 0.70 },
-  '91-180':  { '91-180': 0.20, '180+': 0.80 },
-  '180+':    { '180+': 1.0 },
-};
+import {
+  LOSS_RATES, TRANSITION_MATRIX, TICKET_SIZES, ticketBucket, estimateLoss,
+} from '@/lib/rollRate';
 
 const COLORS = ['#003366', '#0066cc', '#0099ff', '#e67300', '#cc3333', '#990000'];
-const TICKET_SIZES = ['<50K', '50-100K', '100-200K', '200K+'] as const;
-
-function ticketBucket(amount: number): string {
-  if (amount < 50000) return '<50K';
-  if (amount < 100000) return '50-100K';
-  if (amount < 200000) return '100-200K';
-  return '200K+';
-}
-
-function estimateLoss(rows: LoanLevelRow[]): { amount: number; rate: number } {
-  let totalBal = 0, totalLoss = 0;
-  for (const r of rows) {
-    const bucket = getDpdBucket(r.dpdAsOfReportingDate);
-    totalBal += r.currentBalance;
-    totalLoss += r.currentBalance * (LOSS_RATES[bucket] ?? 0);
-  }
-  return { amount: totalLoss, rate: totalBal > 0 ? totalLoss / totalBal : 0 };
-}
 
 function useLoanData(nbfiId: string, loanBookData: Record<string, LoanLevelRow[]>) {
   return useMemo(() => {

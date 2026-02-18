@@ -12,11 +12,11 @@ import { v4 as uuidv4 } from 'uuid';
 import inputTemplateData from '../../data/input-template.json';
 import nbfiOutputData from '../../data/nbfi-output.json';
 import cashflowData from '../../data/cashflow.json';
-import mockLoanBookData from '../../data/mock-loan-book.json';
 import mockCovenantsData from '../../data/mock-covenants.json';
 import mockDocumentsData from '../../data/mock-documents.json';
 import mockMonitoringData from '../../data/mock-monitoring.json';
 import mockEarlyWarningsData from '../../data/mock-early-warnings.json';
+import { NBFI_SEEDS, TRANSACTION_MAP, TRANSACTION_NAMES, getAllSeedLoanBooks } from '@/lib/seedTransactions';
 
 interface AppState {
   user: User | null;
@@ -65,54 +65,36 @@ const NCBA_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'loss', dpdMin: 121, dpdMax: 9999, provisionPercent: 100 },
 ];
 
-const SEED_NBFIS: NBFIRecord[] = [
-  {
-    id: 'seed-1',
-    name: 'Premier Credit Limited',
-    keyContacts: 'John Mwangi (CEO), Alice Wanjiku (CFO)',
-    fundingAmount: 150000000,
-    description: 'Established MFI operating in Central Kenya with focus on agricultural lending.',
-    status: 'monitoring',
-    dateOnboarded: '2024-08-15',
-    commentary: [
-      { id: 'c1', author: 'Sarah Kimani', role: 'analyst', text: 'Strong financials with consistent growth. Recommend for approval.', timestamp: '2024-08-20T10:00:00Z' },
-    ],
-    recommendation: 'Approved for KES 150M facility based on strong financial performance.',
-    approverComments: 'Approved. Solid track record and adequate capital ratios.',
-    covenants: mockCovenantsData.definitions as CovenantDef[],
-    covenantReadings: mockCovenantsData.readings as CovenantReading[],
-    documents: mockDocumentsData as DocumentRequirement[],
+const SEED_NBFIS: NBFIRecord[] = NBFI_SEEDS.map((s, idx) => {
+  const base: NBFIRecord = {
+    id: s.id,
+    name: s.name,
+    keyContacts: s.keyContacts,
+    fundingAmount: s.fundingAmount,
+    description: s.description,
+    status: s.status as NBFIStatus,
+    dateOnboarded: s.dateOnboarded,
+    commentary: idx === 0 ? [{ id: 'c1', author: 'Sarah Kimani', role: 'analyst', text: 'Strong financials with consistent growth. Recommend for approval.', timestamp: '2024-08-20T10:00:00Z' }] : [],
+    recommendation: idx === 0 ? 'Approved for KES 150M facility based on strong financial performance.' : undefined,
+    approverComments: idx === 0 ? 'Approved. Solid track record and adequate capital ratios.' : undefined,
     provisioningRules: { nbfi: NBFI_PROVISIONING, ncba: NCBA_PROVISIONING },
-    earlyWarnings: mockEarlyWarningsData.alerts as EarlyWarningAlert[],
-    monitoringData: mockMonitoringData as unknown as MonitoringData,
-    setupCompleted: true,
-    loanBookMeta: {
-      source: 'nbfi_portal',
-      uploadedAt: '2025-11-15T09:30:00Z',
-      uploadedBy: 'Alice Wanjiku',
-      rowCount: 520,
-      totalBalance: 892000000,
-      filename: 'premier_credit_loanbook_Q4_2025.csv',
-    },
-  },
-  {
-    id: 'seed-2',
-    name: 'Faulu Microfinance',
-    keyContacts: 'Peter Njoroge (MD)',
-    fundingAmount: 200000000,
-    description: 'Leading MFI in East Africa with nationwide branch network.',
-    status: 'pending_review',
-    dateOnboarded: '2024-11-01',
-    commentary: [
-      { id: 'c2', author: 'Sarah Kimani', role: 'analyst', text: 'Financials reviewed. Some concerns on gearing ratio but overall acceptable.', timestamp: '2024-11-05T14:00:00Z' },
-    ],
-    recommendation: 'Recommend with conditions - require quarterly monitoring of gearing.',
-  },
-];
+  };
+  if (idx === 0) {
+    base.covenants = mockCovenantsData.definitions as CovenantDef[];
+    base.covenantReadings = mockCovenantsData.readings as CovenantReading[];
+    base.documents = mockDocumentsData as DocumentRequirement[];
+    base.earlyWarnings = mockEarlyWarningsData.alerts as EarlyWarningAlert[];
+    base.monitoringData = mockMonitoringData as unknown as MonitoringData;
+    base.setupCompleted = true;
+    base.loanBookMeta = { source: 'nbfi_portal', uploadedAt: '2025-11-15T09:30:00Z', uploadedBy: 'Alice Wanjiku', rowCount: 520, totalBalance: 892000000, filename: 'premier_credit_loanbook_Q4_2025.csv' };
+  }
+  if (s.status === 'monitoring' || s.status === 'setup_complete') {
+    base.setupCompleted = true;
+  }
+  return base;
+});
 
-const SEED_LOAN_BOOK: Record<string, LoanLevelRow[]> = {
-  'seed-1': mockLoanBookData as LoanLevelRow[],
-};
+const SEED_LOAN_BOOK: Record<string, LoanLevelRow[]> = getAllSeedLoanBooks();
 
 const SEED_POOL_SELECTION: Record<string, PoolSelectionState> = {
   'seed-1': {

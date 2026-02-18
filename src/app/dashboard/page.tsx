@@ -11,6 +11,8 @@ import {
   FileText, Activity,
 } from 'lucide-react';
 import type { NBFIRecord } from '@/lib/types';
+import { TRANSACTION_MAP } from '@/lib/seedTransactions';
+import { estimateLoss } from '@/lib/rollRate';
 
 function formatKES(amount: number) {
   if (amount >= 1e9) return `KES ${(amount / 1e9).toFixed(1)}B`;
@@ -61,6 +63,7 @@ export default function DashboardPage() {
   const portfolioSummary = useMemo(() => {
     let totalExposure = 0;
     let totalLoanBookBalance = 0;
+    let totalLoans = 0;
     let overdueDocCount = 0;
     let breachedCovenantCount = 0;
     let compliantCovenantCount = 0;
@@ -69,9 +72,11 @@ export default function DashboardPage() {
     nbfis.forEach(n => {
       totalExposure += n.fundingAmount;
 
-      const loans = loanBookData[n.id];
-      if (loans?.length) {
-        totalLoanBookBalance += loans.reduce((s, r) => s + r.currentBalance, 0);
+      const txIds = TRANSACTION_MAP[n.id] || [n.id];
+      const allNbfiLoans = txIds.flatMap(txId => loanBookData[txId] || []);
+      if (allNbfiLoans.length) {
+        totalLoanBookBalance += allNbfiLoans.reduce((s, r) => s + r.currentBalance, 0);
+        totalLoans += allNbfiLoans.length;
       }
 
       if (n.documents) {
@@ -95,7 +100,7 @@ export default function DashboardPage() {
       }
     });
 
-    return { totalExposure, totalLoanBookBalance, overdueDocCount, breachedCovenantCount, compliantCovenantCount, activeNbfis };
+    return { totalExposure, totalLoanBookBalance, totalLoans, overdueDocCount, breachedCovenantCount, compliantCovenantCount, activeNbfis };
   }, [nbfis, loanBookData]);
 
   return (
@@ -117,10 +122,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Portfolio Summary Cards */}
-        <div className="grid grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-7 gap-3 mb-6">
           <SummaryCard icon={<Building2 className="w-4 h-4 text-blue-500" />} label="Total NBFIs" value={String(stats.total)} />
           <SummaryCard icon={<Activity className="w-4 h-4 text-green-500" />} label="Active" value={String(portfolioSummary.activeNbfis)} />
           <SummaryCard icon={<Banknote className="w-4 h-4 text-indigo-500" />} label="Total Exposure" value={formatKES(portfolioSummary.totalExposure)} />
+          <SummaryCard icon={<Users className="w-4 h-4 text-purple-500" />} label="Total Loans" value={portfolioSummary.totalLoans.toLocaleString()} />
           <SummaryCard icon={<Shield className="w-4 h-4 text-emerald-500" />} label="Covenants OK" value={String(portfolioSummary.compliantCovenantCount)} accent="green" />
           <SummaryCard icon={<AlertTriangle className="w-4 h-4 text-red-500" />} label="Covenants Breached" value={String(portfolioSummary.breachedCovenantCount)} accent={portfolioSummary.breachedCovenantCount > 0 ? 'red' : undefined} />
           <SummaryCard icon={<FileText className="w-4 h-4 text-amber-500" />} label="Overdue Docs" value={String(portfolioSummary.overdueDocCount)} accent={portfolioSummary.overdueDocCount > 0 ? 'amber' : undefined} />
@@ -149,6 +155,9 @@ export default function DashboardPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">NBFI</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Exposure</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loan Book</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAR 30+</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Est Loss</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Txns</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Covenants</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Docs</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -157,9 +166,12 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {nbfis.map(nbfi => {
-                const loans = loanBookData[nbfi.id];
-                const loanCount = loans?.length || 0;
-                const loanBalance = loans?.reduce((s, r) => s + r.currentBalance, 0) || 0;
+                const txIds = TRANSACTION_MAP[nbfi.id] || [nbfi.id];
+                const allLoans = txIds.flatMap(txId => loanBookData[txId] || []);
+                const loanCount = allLoans.length;
+                const loanBalance = allLoans.reduce((s, r) => s + r.currentBalance, 0);
+                const par30 = loanCount > 0 ? (allLoans.filter(r => r.dpdAsOfReportingDate > 30).length / loanCount * 100) : 0;
+                const loss = loanCount > 0 ? estimateLoss(allLoans) : { rate: 0 };
 
                 let covenantLabel = '—';
                 let covenantColor = 'text-gray-400';
@@ -224,6 +236,15 @@ export default function DashboardPage() {
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      {loanCount > 0 ? <span className={`text-xs font-medium ${par30 > 10 ? 'text-red-600' : par30 > 5 ? 'text-amber-600' : 'text-green-600'}`}>{par30.toFixed(1)}%</span> : <span className="text-xs text-gray-400">&mdash;</span>}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      {loanCount > 0 ? <span className={`text-xs font-medium ${loss.rate * 100 > 10 ? 'text-red-600' : 'text-gray-700'}`}>{(loss.rate * 100).toFixed(1)}%</span> : <span className="text-xs text-gray-400">&mdash;</span>}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className="text-xs font-medium text-gray-700">{txIds.length}</span>
+                    </td>
                     <td className="px-5 py-4">
                       <span className={`text-xs font-medium ${covenantColor}`}>{covenantLabel}</span>
                     </td>
@@ -249,7 +270,7 @@ export default function DashboardPage() {
               })}
               {nbfis.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400 text-sm">
                     No NBFIs onboarded yet. Click &ldquo;Onboard New NBFI&rdquo; to get started.
                   </td>
                 </tr>
