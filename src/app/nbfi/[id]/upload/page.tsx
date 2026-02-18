@@ -24,6 +24,9 @@ export default function UploadPage() {
   }, [user, router]);
 
   const nbfi = getNBFI(id);
+  useEffect(() => {
+    if (user && id && !nbfi) router.replace('/dashboard');
+  }, [user, id, nbfi, router]);
 
   const handleDrop = useCallback((e: React.DragEvent, type: 'fs' | 'mis') => {
     e.preventDefault();

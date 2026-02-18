@@ -1,0 +1,73 @@
+[
+  {
+    "id": "doc-1",
+    "name": "MIS Portfolio Report",
+    "frequency": "monthly",
+    "nextDueDate": "2025-12-01",
+    "status": "submitted",
+    "submittedDate": "2025-11-28",
+    "submittedBy": "NBFI Portal",
+    "submissions": [
+      { "date": "2025-11-28", "filename": "MIS_Report_Nov2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
+      { "date": "2025-10-30", "filename": "MIS_Report_Oct2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
+      { "date": "2025-09-29", "filename": "MIS_Report_Sep2025.pdf", "uploadedBy": "NCBA Upload" }
+    ]
+  },
+  {
+    "id": "doc-2",
+    "name": "Compliance Certificate",
+    "frequency": "quarterly",
+    "nextDueDate": "2025-12-31",
+    "status": "pending",
+    "submissions": [
+      { "date": "2025-09-28", "filename": "Compliance_Cert_Q3_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
+      { "date": "2025-06-29", "filename": "Compliance_Cert_Q2_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" }
+    ]
+  },
+  {
+    "id": "doc-3",
+    "name": "Unaudited Quarterly Financials",
+    "frequency": "quarterly",
+    "nextDueDate": "2025-10-31",
+    "status": "overdue",
+    "submissions": [
+      { "date": "2025-07-15", "filename": "Financials_Q2_2025.pdf", "uploadedBy": "NCBA Upload" },
+      { "date": "2025-04-10", "filename": "Financials_Q1_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" }
+    ]
+  },
+  {
+    "id": "doc-4",
+    "name": "Audited Annual Financials",
+    "frequency": "annually",
+    "nextDueDate": "2026-03-31",
+    "status": "submitted",
+    "submittedDate": "2025-08-15",
+    "submittedBy": "NCBA Upload",
+    "submissions": [
+      { "date": "2025-08-15", "filename": "Audited_Financials_FY2024.pdf", "uploadedBy": "NCBA Upload" }
+    ]
+  },
+  {
+    "id": "doc-5",
+    "name": "Tax Compliance Certificate",
+    "frequency": "annually",
+    "nextDueDate": "2026-06-30",
+    "status": "submitted",
+    "submittedDate": "2025-07-01",
+    "submittedBy": "Alice Wanjiku (NBFI Portal)",
+    "submissions": [
+      { "date": "2025-07-01", "filename": "KRA_TCC_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" }
+    ]
+  },
+  {
+    "id": "doc-6",
+    "name": "Management Accounts",
+    "frequency": "quarterly",
+    "nextDueDate": "2025-12-15",
+    "status": "pending",
+    "submissions": [
+      { "date": "2025-09-12", "filename": "Mgmt_Accounts_Q3_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
+      { "date": "2025-06-14", "filename": "Mgmt_Accounts_Q2_2025.pdf", "uploadedBy": "NCBA Upload" }
+    ]
+  }
+]

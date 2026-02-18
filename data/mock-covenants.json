@@ -1,0 +1,53 @@
+{
+  "definitions": [
+    { "id": "cov-1", "metric": "CRAR (Capital to Risk-weighted Assets)", "operator": ">=", "threshold": 15, "frequency": "quarterly", "format": "percent" },
+    { "id": "cov-2", "metric": "Net NPA Ratio", "operator": "<=", "threshold": 3, "frequency": "quarterly", "format": "percent" },
+    { "id": "cov-3", "metric": "Collection Efficiency", "operator": ">=", "threshold": 98, "frequency": "monthly", "format": "percent" },
+    { "id": "cov-4", "metric": "PAR 30", "operator": "<=", "threshold": 5, "frequency": "monthly", "format": "percent" },
+    { "id": "cov-5", "metric": "Debt-to-Equity Ratio", "operator": "<=", "threshold": 4, "frequency": "quarterly", "format": "ratio" },
+    { "id": "cov-6", "metric": "Liquidity Coverage Ratio", "operator": ">=", "threshold": 100, "frequency": "quarterly", "format": "percent" }
+  ],
+  "readings": [
+    { "covenantId": "cov-1", "value": 16.1, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-1", "value": 15.8, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-1", "value": 15.5, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-1", "value": 15.2, "date": "2024-12-31", "status": "compliant" },
+    { "covenantId": "cov-1", "value": 15.0, "date": "2025-03-31", "status": "watch" },
+    { "covenantId": "cov-1", "value": 14.7, "date": "2025-06-30", "status": "breached" },
+
+    { "covenantId": "cov-2", "value": 2.1, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-2", "value": 2.4, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-2", "value": 2.8, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-2", "value": 3.2, "date": "2024-12-31", "status": "breached" },
+    { "covenantId": "cov-2", "value": 3.5, "date": "2025-03-31", "status": "breached" },
+    { "covenantId": "cov-2", "value": 3.8, "date": "2025-06-30", "status": "breached" },
+
+    { "covenantId": "cov-3", "value": 99.1, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-3", "value": 98.8, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-3", "value": 98.5, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-3", "value": 98.2, "date": "2024-12-31", "status": "compliant" },
+    { "covenantId": "cov-3", "value": 98.0, "date": "2025-03-31", "status": "compliant" },
+    { "covenantId": "cov-3", "value": 98.2, "date": "2025-06-30", "status": "compliant" },
+
+    { "covenantId": "cov-4", "value": 3.2, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-4", "value": 3.5, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-4", "value": 3.9, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-4", "value": 4.3, "date": "2024-12-31", "status": "compliant" },
+    { "covenantId": "cov-4", "value": 4.8, "date": "2025-03-31", "status": "watch" },
+    { "covenantId": "cov-4", "value": 5.2, "date": "2025-06-30", "status": "breached" },
+
+    { "covenantId": "cov-5", "value": 3.1, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-5", "value": 3.2, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-5", "value": 3.4, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-5", "value": 3.5, "date": "2024-12-31", "status": "compliant" },
+    { "covenantId": "cov-5", "value": 3.6, "date": "2025-03-31", "status": "compliant" },
+    { "covenantId": "cov-5", "value": 3.7, "date": "2025-06-30", "status": "compliant" },
+
+    { "covenantId": "cov-6", "value": 118, "date": "2024-03-31", "status": "compliant" },
+    { "covenantId": "cov-6", "value": 115, "date": "2024-06-30", "status": "compliant" },
+    { "covenantId": "cov-6", "value": 112, "date": "2024-09-30", "status": "compliant" },
+    { "covenantId": "cov-6", "value": 108, "date": "2024-12-31", "status": "compliant" },
+    { "covenantId": "cov-6", "value": 105, "date": "2025-03-31", "status": "compliant" },
+    { "covenantId": "cov-6", "value": 103, "date": "2025-06-30", "status": "compliant" }
+  ]
+}

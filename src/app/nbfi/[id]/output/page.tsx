@@ -202,6 +202,12 @@ export default function OutputPage() {
             >
               <MessageSquare className="w-4 h-4" /> Commentary & Approval
             </Link>
+            <Link
+              href={`/nbfi/${id}/loan-book`}
+              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#003366] text-[#003366] rounded-lg hover:bg-[#003366]/5 text-sm font-medium"
+            >
+              Next: Upload loan book & run EDA
+            </Link>
           </div>
         </div>
 
