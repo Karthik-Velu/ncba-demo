@@ -258,6 +258,23 @@ export interface MonitoringData {
   delinquencyByGeo: { geo: string; rate: number }[];
   compositionByPurpose: { purpose: string; pct: number }[];
   compositionByCounty: { county: string; pct: number }[];
+  wholesaleLoan?: {
+    facilityAmount: number;
+    principalOutstanding: number;
+    disbursementDate: string;
+    maturityDate: string;
+    interestRate: number;
+    nextRepaymentDate: string;
+    nextRepaymentAmount: number;
+    repaymentSchedule: { date: string; amount: number; status: string }[];
+  };
+  impactMetrics?: {
+    totalBorrowers: number;
+    femaleBorrowers: number;
+    ruralBorrowers: number;
+    avgLoanSize: number;
+    jobsSupported: number;
+  };
 }
 
 // ============================================================

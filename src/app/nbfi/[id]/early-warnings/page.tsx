@@ -69,12 +69,12 @@ export default function EarlyWarningsPage() {
   const alerts: EarlyWarningAlert[] = nbfi.earlyWarnings || ewData.alerts;
   const crarChartData = useMemo(() => formatChartData(ewData.crarTrend), []);
 
-  const trendCards = [
-    { metric: 'CRAR', current: 14.7, unit: '%', trend: 'deteriorating' as const, breachDate: '2025-06-30' },
-    { metric: 'Net NPA Ratio', current: 3.8, unit: '%', trend: 'deteriorating' as const, breachDate: '2024-12-31' },
-    { metric: 'Collection Efficiency', current: 98.2, unit: '%', trend: 'deteriorating' as const, breachDate: '2025-12-31' },
-    { metric: 'PAR 30', current: 5.2, unit: '%', trend: 'deteriorating' as const, breachDate: '2025-06-30' },
-    { metric: 'Debt-to-Equity', current: 3.7, unit: 'x', trend: 'stable' as const, breachDate: undefined },
+  const trendCards: { metric: string; current: number; unit: string; trend: 'deteriorating' | 'stable' | 'improving'; breachDate?: string }[] = [
+    { metric: 'CRAR', current: 14.7, unit: '%', trend: 'deteriorating', breachDate: '2025-06-30' },
+    { metric: 'Net NPA Ratio', current: 3.8, unit: '%', trend: 'deteriorating', breachDate: '2024-12-31' },
+    { metric: 'Collection Efficiency', current: 98.2, unit: '%', trend: 'deteriorating', breachDate: '2025-12-31' },
+    { metric: 'PAR 30', current: 5.2, unit: '%', trend: 'deteriorating', breachDate: '2025-06-30' },
+    { metric: 'Debt-to-Equity', current: 3.7, unit: 'x', trend: 'stable' },
   ];
 
   const scenarioImpact = useMemo(() => {
@@ -111,7 +111,7 @@ export default function EarlyWarningsPage() {
               <YAxis domain={[12, 18]} tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} />
               <Tooltip
                 formatter={(val: unknown) => [`${val}%`, '']}
-                labelFormatter={(label: string) => `Period: ${label}`}
+                labelFormatter={(label: unknown) => `Period: ${label}`}
               />
               <ReferenceLine
                 y={ewData.crarTrend.threshold}
