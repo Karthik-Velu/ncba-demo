@@ -1,0 +1,91 @@
+{
+  "crarTrend": {
+    "actuals": [
+      { "date": "2024-03-31", "value": 16.1 },
+      { "date": "2024-06-30", "value": 15.8 },
+      { "date": "2024-09-30", "value": 15.5 },
+      { "date": "2024-12-31", "value": 15.2 },
+      { "date": "2025-03-31", "value": 15.0 },
+      { "date": "2025-06-30", "value": 14.7 }
+    ],
+    "projections": [
+      { "date": "2025-09-30", "value": 14.3 },
+      { "date": "2025-12-31", "value": 13.9 },
+      { "date": "2026-03-31", "value": 13.5 }
+    ],
+    "threshold": 15.0
+  },
+  "collectionEfficiencyTrend": {
+    "actuals": [
+      { "date": "2024-03-31", "value": 99.1 },
+      { "date": "2024-06-30", "value": 98.8 },
+      { "date": "2024-09-30", "value": 98.5 },
+      { "date": "2024-12-31", "value": 98.2 },
+      { "date": "2025-03-31", "value": 98.0 },
+      { "date": "2025-06-30", "value": 98.2 }
+    ],
+    "projections": [
+      { "date": "2025-09-30", "value": 98.0 },
+      { "date": "2025-12-31", "value": 97.8 },
+      { "date": "2026-03-31", "value": 97.5 }
+    ],
+    "threshold": 98.0
+  },
+  "par30Trend": {
+    "actuals": [
+      { "date": "2024-03-31", "value": 3.2 },
+      { "date": "2024-06-30", "value": 3.5 },
+      { "date": "2024-09-30", "value": 3.9 },
+      { "date": "2024-12-31", "value": 4.3 },
+      { "date": "2025-03-31", "value": 4.8 },
+      { "date": "2025-06-30", "value": 5.2 }
+    ],
+    "projections": [
+      { "date": "2025-09-30", "value": 5.6 },
+      { "date": "2025-12-31", "value": 6.0 },
+      { "date": "2026-03-31", "value": 6.4 }
+    ],
+    "threshold": 5.0
+  },
+  "alerts": [
+    {
+      "id": "ew-1",
+      "metric": "CRAR",
+      "severity": "critical",
+      "message": "CRAR has fallen below the 15% threshold to 14.7%. Projected to decline further to 13.5% by Q1 2026 if current trend continues.",
+      "predictedBreachDate": "2025-06-30",
+      "trend": "deteriorating"
+    },
+    {
+      "id": "ew-2",
+      "metric": "Net NPA Ratio",
+      "severity": "critical",
+      "message": "Net NPA has been above the 3% covenant limit for 3 consecutive quarters, currently at 3.8%. Immediate remediation required.",
+      "predictedBreachDate": "2024-12-31",
+      "trend": "deteriorating"
+    },
+    {
+      "id": "ew-3",
+      "metric": "PAR 30",
+      "severity": "warning",
+      "message": "PAR 30 breached the 5% threshold in Q2 2025 at 5.2%. Trend indicates further deterioration to 6.4% by Q1 2026.",
+      "predictedBreachDate": "2025-06-30",
+      "trend": "deteriorating"
+    },
+    {
+      "id": "ew-4",
+      "metric": "Collection Efficiency",
+      "severity": "info",
+      "message": "Collection efficiency is at 98.2%, marginally above the 98% threshold. Projected to breach by Q4 2025 if trend continues.",
+      "predictedBreachDate": "2025-12-31",
+      "trend": "deteriorating"
+    },
+    {
+      "id": "ew-5",
+      "metric": "Debt-to-Equity",
+      "severity": "info",
+      "message": "Debt-to-equity ratio is stable at 3.7x, below the 4.0x limit. No immediate concern but trending upward.",
+      "trend": "stable"
+    }
+  ]
+}

@@ -2,7 +2,16 @@
 // Core NBFI / Originator Types
 // ============================================================
 
-export type NBFIStatus = 'draft' | 'uploading' | 'spreading' | 'pending_review' | 'approved' | 'rejected';
+export type NBFIStatus =
+  | 'draft'
+  | 'uploading'
+  | 'spreading'
+  | 'pending_review'
+  | 'approved'
+  | 'rejected'
+  | 'pool_selected'
+  | 'setup_complete'
+  | 'monitoring';
 
 export interface NBFIRecord {
   id: string;
@@ -16,6 +25,17 @@ export interface NBFIRecord {
   commentary?: CommentaryEntry[];
   recommendation?: string;
   approverComments?: string;
+  covenants?: CovenantDef[];
+  covenantReadings?: CovenantReading[];
+  documents?: DocumentRequirement[];
+  provisioningRules?: {
+    nbfi: ProvisioningRule[];
+    ncba: ProvisioningRule[];
+  };
+  earlyWarnings?: EarlyWarningAlert[];
+  monitoringData?: MonitoringData;
+  setupCompleted?: boolean;
+  loanBookMeta?: LoanBookUploadMeta;
 }
 
 export interface CommentaryEntry {
@@ -53,9 +73,9 @@ export interface InputTemplateData {
 }
 
 export interface PeriodInfo {
-  date: string;       // e.g. "2023-12-31"
-  type: string;       // "Audited" | "Unaudited" | etc.
-  months: number;     // typically 12
+  date: string;
+  type: string;
+  months: number;
 }
 
 export interface FinancialSection {
@@ -65,12 +85,12 @@ export interface FinancialSection {
 
 export interface FinancialRow {
   label: string;
-  indent: number;          // 0 = top-level, 1 = sub, 2 = sub-sub, etc.
-  isHeader: boolean;       // section headers (not editable)
-  isTotal: boolean;        // computed total rows
-  isEditable: boolean;     // whether the user can edit the value
-  values: (number | null)[]; // one value per period
-  key: string;             // unique identifier for this row
+  indent: number;
+  isHeader: boolean;
+  isTotal: boolean;
+  isEditable: boolean;
+  values: (number | null)[];
+  key: string;
 }
 
 // ---- NBFI Output ----
@@ -91,8 +111,8 @@ export interface NBFIOutputSection {
 
 export interface NBFIOutputRow {
   label: string;
-  values: (number | null)[];         // one per period
-  pctChanges: (number | null)[];     // % annual change between periods
+  values: (number | null)[];
+  pctChanges: (number | null)[];
   isHeader: boolean;
   isTotal: boolean;
   indent: number;
@@ -103,7 +123,7 @@ export interface DSCRData {
   title: string;
   cashflowFromOps: DSCRSection;
   loanRepayments: DSCRSection;
-  dscrResult: (number | string | null)[];  // one per period, can be "#DIV/0!"
+  dscrResult: (number | string | null)[];
 }
 
 export interface DSCRSection {
@@ -112,8 +132,8 @@ export interface DSCRSection {
 
 export interface BCCSummaryRow {
   label: string;
-  values: (number | string | null)[];       // one per period
-  pctChanges: (number | string | null)[];   // % annual change
+  values: (number | string | null)[];
+  pctChanges: (number | string | null)[];
   key: string;
   format?: 'number' | 'percent' | 'ratio' | 'text';
 }
@@ -132,16 +152,126 @@ export interface CashFlowSection {
 }
 
 // ============================================================
+// Loan-level / Portfolio EDA Types
+// ============================================================
+
+export interface LoanLevelRow {
+  loanId: string;
+  borrowerName?: string;
+  geography: string;
+  product: string;
+  segment: string;
+  loanSize: number;
+  disbursementDate: string;
+  dpdBucket: string;
+  balance: number;
+  kiScore?: number;
+  interestRate?: number;
+  residualTenureMonths?: number;
+}
+
+export interface PoolSelectionState {
+  excludedSegments: string[];
+  filterSnapshot: {
+    kiScoreMax?: number;
+    loanAmountMin?: number;
+    loanAmountMax?: number;
+    tenureMin?: number;
+    tenureMax?: number;
+    rateMin?: number;
+    rateMax?: number;
+    geographies: string[];
+    products: string[];
+  };
+  confirmedAt?: string;
+}
+
+export interface LoanBookUploadMeta {
+  source: 'sftp' | 'ncba_upload' | 'nbfi_portal';
+  uploadedAt: string;
+  uploadedBy: string;
+  rowCount: number;
+  totalBalance: number;
+  filename?: string;
+}
+
+// ============================================================
+// Covenant & Setup Types
+// ============================================================
+
+export interface CovenantDef {
+  id: string;
+  metric: string;
+  operator: '>=' | '<=' | '>' | '<';
+  threshold: number;
+  frequency: 'monthly' | 'quarterly' | 'annually';
+  format: 'percent' | 'ratio' | 'number';
+}
+
+export interface CovenantReading {
+  covenantId: string;
+  value: number;
+  date: string;
+  status: 'compliant' | 'breached' | 'watch';
+}
+
+export interface DocumentRequirement {
+  id: string;
+  name: string;
+  frequency: 'monthly' | 'quarterly' | 'annually';
+  nextDueDate: string;
+  status: 'submitted' | 'pending' | 'overdue';
+  submittedDate?: string;
+  submittedBy?: string;
+  submissions?: { date: string; filename: string; uploadedBy: string }[];
+}
+
+export interface ProvisioningRule {
+  bucket: 'normal' | 'watch' | 'substandard' | 'doubtful' | 'loss';
+  dpdMin: number;
+  dpdMax: number;
+  provisionPercent: number;
+}
+
+// ============================================================
+// Early Warning Types
+// ============================================================
+
+export interface EarlyWarningAlert {
+  id: string;
+  metric: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  predictedBreachDate?: string;
+  trend: 'deteriorating' | 'stable' | 'improving';
+}
+
+// ============================================================
+// Monitoring Types
+// ============================================================
+
+export interface MonitoringData {
+  principalOutstanding: number;
+  collectionEfficiency: number;
+  liveLoans: number;
+  delinquencyByVintage: { vintage: string; rate: number }[];
+  delinquencyByGeo: { geo: string; rate: number }[];
+  compositionByPurpose: { purpose: string; pct: number }[];
+  compositionByCounty: { county: string; pct: number }[];
+}
+
+// ============================================================
 // Auth / User Types
 // ============================================================
 
-export type UserRole = 'analyst' | 'approver';
+export type UserRole = 'analyst' | 'approver' | 'nbfi_user';
 
 export interface User {
   id: string;
   name: string;
   role: UserRole;
   email: string;
+  nbfiId?: string;
 }
 
 // ============================================================
@@ -170,5 +300,5 @@ export interface RowSchema {
   isHeader: boolean;
   isTotal: boolean;
   isEditable: boolean;
-  formula?: string; // optional: formula description for computed rows
+  formula?: string;
 }
