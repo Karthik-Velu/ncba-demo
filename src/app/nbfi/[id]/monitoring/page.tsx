@@ -7,8 +7,11 @@ import Sidebar from '@/components/Sidebar';
 import { MonitoringData, LoanLevelRow } from '@/lib/types';
 import {
   Activity, Users, Banknote, TrendingUp, TrendingDown,
-  Globe, Target, Calendar, CheckCircle2, Clock,
+  Globe, Target, Calendar, CheckCircle2, Clock, Layers, Building2,
+  Filter,
 } from 'lucide-react';
+import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
+import { LineChart, Line } from 'recharts';
 import Link from 'next/link';
 import { TransactionAlertTimeline } from '@/components/NotificationBell';
 import {
@@ -20,13 +23,15 @@ import mockMonitoring from '../../../../../data/mock-monitoring.json';
 const COLORS = ['#003366', '#0066cc', '#0099ff', '#00ccff', '#66e0ff', '#339966', '#cc6633'];
 
 type MonLevel = 'level1' | 'level2';
+type MonScope = 'transaction' | 'nbfi' | 'portfolio';
 
 export default function MonitoringPage() {
-  const { user, getNBFI, loanBookData } = useApp();
+  const { user, getNBFI, loanBookData, nbfis } = useApp();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const [level, setLevel] = useState<MonLevel>('level1');
+  const [scope, setScope] = useState<MonScope>('transaction');
 
   useEffect(() => {
     if (!user) router.push('/');
@@ -63,6 +68,46 @@ export default function MonitoringPage() {
     };
   }, [loans, mon]);
 
+  const allLoans = useMemo(() => {
+    const all: LoanLevelRow[] = [];
+    for (const nId of Object.keys(loanBookData)) {
+      all.push(...loanBookData[nId]);
+    }
+    return all;
+  }, [loanBookData]);
+
+  const portfolioWideStats = useMemo(() => {
+    if (allLoans.length === 0) return null;
+    const totalBal = allLoans.reduce((s, r) => s + r.currentBalance, 0);
+    const par30 = allLoans.filter(r => r.dpdAsOfReportingDate > 30).length;
+    const par90 = allLoans.filter(r => r.dpdAsOfReportingDate > 90).length;
+    const nbfiCount = new Set(Object.keys(loanBookData).filter(k => loanBookData[k].length > 0)).size;
+    return {
+      totalLoans: allLoans.length, totalBal, nbfiCount,
+      par30Pct: (par30 / allLoans.length * 100).toFixed(1),
+      par90Pct: (par90 / allLoans.length * 100).toFixed(1),
+      avgBal: Math.round(totalBal / allLoans.length),
+    };
+  }, [allLoans, loanBookData]);
+
+  const portfolioDpdDist = useMemo(() => {
+    const map: Record<string, number> = {};
+    DPD_BUCKETS.forEach(b => (map[b] = 0));
+    allLoans.forEach(r => { map[getDpdBucket(r.dpdAsOfReportingDate)] += r.currentBalance; });
+    return DPD_BUCKETS.map(b => ({ bucket: b, balance: map[b] }));
+  }, [allLoans]);
+
+  const trendData = useMemo(() => {
+    return [
+      { month: 'Sep', par30: 8.2, par90: 3.1, collection: 97.5 },
+      { month: 'Oct', par30: 7.8, par90: 3.0, collection: 97.8 },
+      { month: 'Nov', par30: 8.5, par90: 3.4, collection: 97.2 },
+      { month: 'Dec', par30: 9.1, par90: 3.8, collection: 96.9 },
+      { month: 'Jan', par30: 8.7, par90: 3.5, collection: 97.4 },
+      { month: 'Feb', par30: parseFloat(portfolioWideStats?.par30Pct || '8.5'), par90: parseFloat(portfolioWideStats?.par90Pct || '3.3'), collection: 97.6 },
+    ];
+  }, [portfolioWideStats]);
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -71,33 +116,160 @@ export default function MonitoringPage() {
           &larr; Dashboard
         </Link>
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Risk Monitoring Dashboard — {nbfi.name}</h1>
-            <p className="text-sm text-gray-500 mt-1">Two-tier monitoring: Level 1 (portfolio health) and Level 2 (deep-dive analytics)</p>
+            <h1 className="text-xl font-bold text-gray-800">Risk Monitoring Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (all transactions)` : 'NCBA Full Portfolio'}
+            </p>
           </div>
+        </div>
+
+        {/* Scope Selector */}
+        <div className="flex items-center gap-4 mb-6">
           <div className="flex bg-gray-100 p-1 rounded-lg">
-            {(['level1', 'level2'] as const).map(l => (
-              <button
-                key={l}
-                onClick={() => setLevel(l)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  level === l ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {l === 'level1' ? 'Level 1 — Portfolio' : 'Level 2 — Deep Dive'}
+            {([
+              { key: 'transaction' as const, label: 'Transaction', icon: Target },
+              { key: 'nbfi' as const, label: 'NBFI', icon: Building2 },
+              { key: 'portfolio' as const, label: 'Portfolio', icon: Layers },
+            ]).map(({ key, label, icon: Icon }) => (
+              <button key={key} onClick={() => setScope(key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  scope === key ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}>
+                <Icon className="w-3.5 h-3.5" /> {label}
               </button>
             ))}
           </div>
+          {scope === 'transaction' && (
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              {(['level1', 'level2'] as const).map(l => (
+                <button key={l} onClick={() => setLevel(l)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    level === l ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}>
+                  {l === 'level1' ? 'Level 1' : 'Level 2'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Alerts for this transaction */}
-        <div className="mb-6">
-          <h3 className="text-sm font-bold text-gray-700 mb-3">Recent Alerts</h3>
-          <TransactionAlertTimeline nbfiId={id} />
-        </div>
+        {scope !== 'portfolio' && (
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-700 mb-3">Recent Alerts</h3>
+            <TransactionAlertTimeline nbfiId={id} />
+          </div>
+        )}
 
-        {level === 'level1' && (
+        {/* Portfolio-level view */}
+        {scope === 'portfolio' && portfolioWideStats && (
+          <>
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <StatCard icon={<Layers className="w-5 h-5 text-[#003366]" />} label="Active NBFIs" value={portfolioWideStats.nbfiCount.toString()} />
+              <StatCard icon={<Users className="w-5 h-5 text-green-500" />} label="Total Loans" value={portfolioWideStats.totalLoans.toLocaleString()} />
+              <StatCard icon={<Banknote className="w-5 h-5 text-blue-500" />} label="Total Balance" value={`KES ${(portfolioWideStats.totalBal / 1e6).toFixed(0)}M`} />
+              <StatCard icon={<TrendingDown className="w-5 h-5 text-amber-500" />} label="PAR 30+" value={`${portfolioWideStats.par30Pct}%`} trend={parseFloat(portfolioWideStats.par30Pct) > 10 ? 'down' : 'up'} />
+              <StatCard icon={<Activity className="w-5 h-5 text-red-500" />} label="PAR 90+" value={`${portfolioWideStats.par90Pct}%`} trend={parseFloat(portfolioWideStats.par90Pct) > 5 ? 'down' : 'up'} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-sm font-bold text-[#003366] mb-4">Portfolio DPD Distribution (Balance)</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={portfolioDpdDist}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1e6).toFixed(0)}M`} />
+                    <Tooltip formatter={(val: unknown) => [`KES ${(Number(val) / 1e6).toFixed(1)}M`]} />
+                    <Bar dataKey="balance" fill="#003366" radius={[4, 4, 0, 0]}>
+                      {portfolioDpdDist.map((d, i) => (
+                        <Cell key={d.bucket} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-sm font-bold text-[#003366] mb-4">PAR Trend (6 months)</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${v}%`} />
+                    <Tooltip formatter={(val: unknown) => [`${Number(val).toFixed(1)}%`]} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="par30" name="PAR 30+" stroke="#e67300" strokeWidth={2} />
+                    <Line type="monotone" dataKey="par90" name="PAR 90+" stroke="#cc3333" strokeWidth={2} />
+                    <Line type="monotone" dataKey="collection" name="Collection %" stroke="#003366" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* NBFI Breakdown Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-sm font-bold text-[#003366] mb-4">NBFI Performance Breakdown</h2>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase">
+                    <th className="text-left px-4 py-2.5">NBFI</th>
+                    <th className="text-right px-4 py-2.5">Loans</th>
+                    <th className="text-right px-4 py-2.5">Balance</th>
+                    <th className="text-right px-4 py-2.5">PAR 30+</th>
+                    <th className="text-right px-4 py-2.5">PAR 90+</th>
+                    <th className="text-right px-4 py-2.5">Avg Rate</th>
+                    <th className="text-left px-4 py-2.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nbfis.filter(n => loanBookData[n.id]?.length > 0).map(n => {
+                    const nLoans = loanBookData[n.id];
+                    const bal = nLoans.reduce((s, r) => s + r.currentBalance, 0);
+                    const p30 = nLoans.filter(r => r.dpdAsOfReportingDate > 30).length;
+                    const p90 = nLoans.filter(r => r.dpdAsOfReportingDate > 90).length;
+                    const avgR = nLoans.reduce((s, r) => s + r.interestRate, 0) / nLoans.length;
+                    return (
+                      <tr key={n.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-medium">
+                          <Link href={`/nbfi/${n.id}/monitoring`} className="text-[#003366] hover:underline">{n.name}</Link>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">{nLoans.length}</td>
+                        <td className="px-4 py-2.5 text-right font-mono">{(bal / 1e6).toFixed(1)}M</td>
+                        <td className={`px-4 py-2.5 text-right ${(p30 / nLoans.length * 100) > 10 ? 'text-red-600 font-semibold' : ''}`}>
+                          {(p30 / nLoans.length * 100).toFixed(1)}%
+                        </td>
+                        <td className={`px-4 py-2.5 text-right ${(p90 / nLoans.length * 100) > 5 ? 'text-red-600 font-semibold' : ''}`}>
+                          {(p90 / nLoans.length * 100).toFixed(1)}%
+                        </td>
+                        <td className="px-4 py-2.5 text-right">{avgR.toFixed(1)}%</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            n.status === 'monitoring' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          }`}>{n.status.replace(/_/g, ' ')}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* NBFI-level view (same as transaction for now but with context) */}
+        {scope === 'nbfi' && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>NBFI View:</strong> Showing aggregated data across all transactions with <strong>{nbfi.name}</strong>.
+              Currently 1 active transaction. Switch to Transaction view for detailed analysis.
+            </p>
+          </div>
+        )}
+
+        {(scope === 'transaction' || scope === 'nbfi') && level === 'level1' && (
           <>
             {/* KPI Cards */}
             <div className="grid grid-cols-4 gap-4 mb-6">
@@ -199,7 +371,7 @@ export default function MonitoringPage() {
           </>
         )}
 
-        {level === 'level2' && (
+        {(scope === 'transaction' || scope === 'nbfi') && level === 'level2' && (
           <>
             {/* Wholesale Loan Details */}
             {wholesale && (
