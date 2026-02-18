@@ -11,6 +11,7 @@ import {
   FileText, Activity,
 } from 'lucide-react';
 import type { NBFIRecord } from '@/lib/types';
+import { DashboardAlertStrip } from '@/components/NotificationBell';
 
 function formatKES(amount: number) {
   if (amount >= 1e9) return `KES ${(amount / 1e9).toFixed(1)}B`;
@@ -102,6 +103,7 @@ export default function DashboardPage() {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 p-8 bg-gray-50">
+        <DashboardAlertStrip />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">NBFI Risk Infrastructure</h1>

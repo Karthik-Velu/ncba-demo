@@ -10,6 +10,7 @@ import {
   Building2, Home, Wifi,
 } from 'lucide-react';
 import { useState, useCallback } from 'react';
+import NotificationBell from './NotificationBell';
 
 export default function Sidebar() {
   const { user, logout, getNBFI } = useApp();
@@ -265,16 +266,21 @@ function SidebarShell({ children, user, logout, title, subtitle }: {
       </div>
       {children}
       <div className="p-4 border-t border-[#003366]">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-            {user.name.split(' ').map(n => n[0]).join('')}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
+              {user.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div>
+              <p className="text-sm font-medium">{user.name}</p>
+              <p className="text-xs text-blue-300 capitalize flex items-center gap-1">
+                <FileSpreadsheet className="w-3 h-3" />
+                {user.role.replace(/_/g, ' ')}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-blue-300 capitalize flex items-center gap-1">
-              <FileSpreadsheet className="w-3 h-3" />
-              {user.role.replace(/_/g, ' ')}
-            </p>
+          <div className="[&_button]:text-blue-300 [&_button:hover]:text-white [&_svg]:text-blue-300">
+            <NotificationBell />
           </div>
         </div>
         <button onClick={logout} className="flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors">

@@ -10,6 +10,7 @@ import {
   Globe, Target, Calendar, CheckCircle2, Clock,
 } from 'lucide-react';
 import Link from 'next/link';
+import { TransactionAlertTimeline } from '@/components/NotificationBell';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -88,6 +89,12 @@ export default function MonitoringPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Alerts for this transaction */}
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-gray-700 mb-3">Recent Alerts</h3>
+          <TransactionAlertTimeline nbfiId={id} />
         </div>
 
         {level === 'level1' && (
