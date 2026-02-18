@@ -1,0 +1,68 @@
+{
+  "principalOutstanding": 892000000,
+  "collectionEfficiency": 98.2,
+  "liveLoans": 4520,
+  "delinquencyByVintage": [
+    { "vintage": "2023-Q1", "rate": 12.4 },
+    { "vintage": "2023-Q2", "rate": 10.8 },
+    { "vintage": "2023-Q3", "rate": 9.2 },
+    { "vintage": "2023-Q4", "rate": 7.5 },
+    { "vintage": "2024-Q1", "rate": 6.1 },
+    { "vintage": "2024-Q2", "rate": 4.8 },
+    { "vintage": "2024-Q3", "rate": 3.5 },
+    { "vintage": "2024-Q4", "rate": 2.2 },
+    { "vintage": "2025-Q1", "rate": 1.4 },
+    { "vintage": "2025-Q2", "rate": 0.8 }
+  ],
+  "delinquencyByGeo": [
+    { "geo": "Nairobi", "rate": 4.2 },
+    { "geo": "Mombasa", "rate": 5.8 },
+    { "geo": "Nakuru", "rate": 3.9 },
+    { "geo": "Kisumu", "rate": 6.5 },
+    { "geo": "Machakos", "rate": 3.1 },
+    { "geo": "Nyeri", "rate": 2.8 },
+    { "geo": "Eldoret", "rate": 4.5 }
+  ],
+  "compositionByPurpose": [
+    { "purpose": "Boda-Boda", "pct": 30 },
+    { "purpose": "Agri-Finance", "pct": 25 },
+    { "purpose": "MSME", "pct": 20 },
+    { "purpose": "Check-off", "pct": 15 },
+    { "purpose": "SACCO", "pct": 10 }
+  ],
+  "compositionByCounty": [
+    { "county": "Nairobi", "pct": 35 },
+    { "county": "Mombasa", "pct": 18 },
+    { "county": "Nakuru", "pct": 15 },
+    { "county": "Kisumu", "pct": 12 },
+    { "county": "Machakos", "pct": 8 },
+    { "county": "Nyeri", "pct": 6 },
+    { "county": "Eldoret", "pct": 6 }
+  ],
+  "wholesaleLoan": {
+    "facilityAmount": 150000000,
+    "principalOutstanding": 142500000,
+    "disbursementDate": "2024-08-15",
+    "maturityDate": "2027-08-15",
+    "interestRate": 13.5,
+    "nextRepaymentDate": "2026-02-15",
+    "nextRepaymentAmount": 6250000,
+    "repaymentSchedule": [
+      { "date": "2024-11-15", "amount": 6250000, "status": "paid" },
+      { "date": "2025-02-15", "amount": 6250000, "status": "paid" },
+      { "date": "2025-05-15", "amount": 6250000, "status": "paid" },
+      { "date": "2025-08-15", "amount": 6250000, "status": "paid" },
+      { "date": "2025-11-15", "amount": 6250000, "status": "paid" },
+      { "date": "2026-02-15", "amount": 6250000, "status": "upcoming" },
+      { "date": "2026-05-15", "amount": 6250000, "status": "future" },
+      { "date": "2026-08-15", "amount": 6250000, "status": "future" }
+    ]
+  },
+  "impactMetrics": {
+    "totalBorrowers": 4520,
+    "femaleBorrowers": 2712,
+    "ruralBorrowers": 2260,
+    "avgLoanSize": 101200,
+    "jobsSupported": 6780
+  }
+}
