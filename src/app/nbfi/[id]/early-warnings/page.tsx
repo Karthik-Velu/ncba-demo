@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
-import mockEarlyWarnings from '../../../../data/mock-early-warnings.json';
+import mockEarlyWarnings from '../../../../../data/mock-early-warnings.json';
 
 type TrendPoint = { date: string; value: number };
 type TrendData = { actuals: TrendPoint[]; projections: TrendPoint[]; threshold: number };
@@ -110,7 +110,7 @@ export default function EarlyWarningsPage() {
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[12, 18]} tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} />
               <Tooltip
-                formatter={(val: number) => [`${val}%`, '']}
+                formatter={(val: unknown) => [`${val}%`, '']}
                 labelFormatter={(label: string) => `Period: ${label}`}
               />
               <ReferenceLine
