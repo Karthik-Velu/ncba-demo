@@ -71,6 +71,9 @@ body {
 .badge-pending_review { background: #fef9c3; color: #ca8a04; }
 .badge-approved { background: #dcfce7; color: #16a34a; }
 .badge-rejected { background: #fee2e2; color: #dc2626; }
+.badge-pool_selected { background: #e0e7ff; color: #4338ca; }
+.badge-setup_complete { background: #dbeafe; color: #2563eb; }
+.badge-monitoring { background: #d1fae5; color: #059669; }
 
 /* Editable cell */
 .editable-cell {

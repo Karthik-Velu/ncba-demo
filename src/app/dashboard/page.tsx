@@ -74,7 +74,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total NBFIs', value: stats.total, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Approved', value: stats.approved, color: 'bg-green-50 text-green-700' },
+            { label: 'Active / Monitoring', value: stats.monitoring, color: 'bg-green-50 text-green-700' },
             { label: 'Pending Review', value: stats.pending, color: 'bg-amber-50 text-amber-700' },
             { label: 'In Progress', value: stats.draft, color: 'bg-gray-50 text-gray-600' },
           ].map(({ label, value, color }) => (
@@ -104,7 +104,9 @@ export default function DashboardPage() {
                   key={nbfi.id}
                   className="border-b border-gray-100 hover:bg-blue-50/30 cursor-pointer transition-colors"
                   onClick={() => {
-                    if (nbfi.status === 'draft') router.push(`/nbfi/${nbfi.id}/upload`);
+                    if (nbfi.status === 'monitoring' || nbfi.status === 'setup_complete') router.push(`/nbfi/${nbfi.id}/monitoring`);
+                    else if (nbfi.status === 'pool_selected') router.push(`/nbfi/${nbfi.id}/setup`);
+                    else if (nbfi.status === 'draft') router.push(`/nbfi/${nbfi.id}/upload`);
                     else if (nbfi.status === 'spreading') router.push(`/nbfi/${nbfi.id}/input`);
                     else if (nbfi.status === 'pending_review' || nbfi.status === 'approved') router.push(`/nbfi/${nbfi.id}/output`);
                     else router.push(`/nbfi/${nbfi.id}/upload`);
