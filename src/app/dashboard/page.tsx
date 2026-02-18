@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   Plus, ChevronRight, Building2, TrendingUp, Trash2,
   AlertTriangle, CheckCircle2, Shield, Banknote, Users,
-  FileText, Activity,
+  FileText, Activity, Wifi,
 } from 'lucide-react';
 import type { NBFIRecord } from '@/lib/types';
 import { TRANSACTION_MAP } from '@/lib/seedTransactions';
@@ -122,29 +122,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Portfolio Summary Cards */}
-        <div className="grid grid-cols-7 gap-3 mb-6">
+        <div className="grid grid-cols-5 gap-3 mb-6">
           <SummaryCard icon={<Building2 className="w-4 h-4 text-blue-500" />} label="Total NBFIs" value={String(stats.total)} />
           <SummaryCard icon={<Activity className="w-4 h-4 text-green-500" />} label="Active" value={String(portfolioSummary.activeNbfis)} />
           <SummaryCard icon={<Banknote className="w-4 h-4 text-indigo-500" />} label="Total Exposure" value={formatKES(portfolioSummary.totalExposure)} />
-          <SummaryCard icon={<Users className="w-4 h-4 text-purple-500" />} label="Total Loans" value={portfolioSummary.totalLoans.toLocaleString()} />
-          <SummaryCard icon={<Shield className="w-4 h-4 text-emerald-500" />} label="Covenants OK" value={String(portfolioSummary.compliantCovenantCount)} accent="green" />
           <SummaryCard icon={<AlertTriangle className="w-4 h-4 text-red-500" />} label="Covenants Breached" value={String(portfolioSummary.breachedCovenantCount)} accent={portfolioSummary.breachedCovenantCount > 0 ? 'red' : undefined} />
           <SummaryCard icon={<FileText className="w-4 h-4 text-amber-500" />} label="Overdue Docs" value={String(portfolioSummary.overdueDocCount)} accent={portfolioSummary.overdueDocCount > 0 ? 'amber' : undefined} />
-        </div>
-
-        {/* Quick Status Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[
-            { label: 'Total NBFIs', value: stats.total, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Active / Monitoring', value: stats.monitoring, color: 'bg-green-50 text-green-700' },
-            { label: 'Pending Review', value: stats.pending, color: 'bg-amber-50 text-amber-700' },
-            { label: 'In Progress', value: stats.draft, color: 'bg-gray-100 text-gray-600' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className={`rounded-xl p-4 ${color}`}>
-              <p className="text-xl font-bold">{value}</p>
-              <p className="text-xs mt-0.5 opacity-80">{label}</p>
-            </div>
-          ))}
         </div>
 
         {/* NBFI Comparison Table */}
@@ -152,16 +135,16 @@ export default function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">NBFI</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Exposure</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loan Book</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAR 30+</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Est Loss</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Txns</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Covenants</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Docs</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 w-20"></th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">NBFI</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Exposure</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loan Book</th>
+                <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAR 30+</th>
+                <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Est Loss</th>
+                <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Txns</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Covenants</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Docs</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-2.5 w-20"></th>
               </tr>
             </thead>
             <tbody>
@@ -212,7 +195,7 @@ export default function DashboardPage() {
                       else router.push(`/nbfi/${nbfi.id}/upload`);
                     }}
                   >
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-[#003366] flex items-center justify-center shrink-0">
                           <Building2 className="w-3.5 h-3.5 text-white" />
@@ -223,10 +206,10 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2.5">
                       <span className="text-sm font-medium text-gray-700">{formatKES(nbfi.fundingAmount)}</span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2.5">
                       {loanCount > 0 ? (
                         <div>
                           <span className="text-sm font-medium text-gray-700">{loanCount.toLocaleString()} loans</span>
@@ -236,24 +219,32 @@ export default function DashboardPage() {
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {loanCount > 0 ? <span className={`text-xs font-medium ${par30 > 10 ? 'text-red-600' : par30 > 5 ? 'text-amber-600' : 'text-green-600'}`}>{par30.toFixed(1)}%</span> : <span className="text-xs text-gray-400">&mdash;</span>}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       {loanCount > 0 ? <span className={`text-xs font-medium ${loss.rate * 100 > 10 ? 'text-red-600' : 'text-gray-700'}`}>{(loss.rate * 100).toFixed(1)}%</span> : <span className="text-xs text-gray-400">&mdash;</span>}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <span className="text-xs font-medium text-gray-700">{txIds.length}</span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2.5">
                       <span className={`text-xs font-medium ${covenantColor}`}>{covenantLabel}</span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-2.5">
                       <span className={`text-xs font-medium ${docColor}`}>{docLabel}</span>
                     </td>
-                    <td className="px-5 py-4"><StatusBadge status={nbfi.status} /></td>
-                    <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-0.5">
+                    <td className="px-4 py-2.5"><StatusBadge status={nbfi.status} /></td>
+                    <td className="px-4 py-2.5 text-right" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/nbfi/${nbfi.id}/integration`}
+                          className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-[#003366] hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Data Integration"
+                        >
+                          <Wifi className="w-3.5 h-3.5" />
+                          Integration
+                        </Link>
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(nbfi)}

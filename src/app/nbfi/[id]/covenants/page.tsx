@@ -5,10 +5,10 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { CovenantDef, CovenantReading, ProvisioningRule, LoanLevelRow, EarlyWarningAlert } from '@/lib/types';
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, AlertCircle, Info, CheckCircle2, Eye, FileBarChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, AlertCircle, Info, CheckCircle2, Eye, FileBarChart, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Legend,
 } from 'recharts';
 import mockEarlyWarnings from '../../../../../data/mock-early-warnings.json';
 
@@ -16,25 +16,21 @@ type TrendPoint = { date: string; value: number };
 type TrendData = { actuals: TrendPoint[]; projections: TrendPoint[]; threshold: number };
 const ewData = mockEarlyWarnings as {
   crarTrend: TrendData;
+  collectionEfficiencyTrend: TrendData;
+  par30Trend: TrendData;
   alerts: EarlyWarningAlert[];
 };
 
 function formatChartData(trend: TrendData) {
-  const actuals = trend.actuals.map(d => ({
-    date: d.date.slice(0, 7),
-    actual: d.value,
-    projected: null as number | null,
-  }));
   const lastActual = trend.actuals[trend.actuals.length - 1];
-  const projections = [
-    { date: lastActual.date.slice(0, 7), actual: null as number | null, projected: lastActual.value },
-    ...trend.projections.map(d => ({
-      date: d.date.slice(0, 7),
-      actual: null as number | null,
-      projected: d.value,
-    })),
-  ];
-  return [...actuals, ...projections.slice(1)];
+  const merged: { date: string; actual: number | null; projected: number | null }[] = trend.actuals.map(d => ({
+    date: d.date.slice(0, 7), actual: d.value, projected: null,
+  }));
+  merged[merged.length - 1].projected = lastActual.value;
+  trend.projections.forEach(d => {
+    merged.push({ date: d.date.slice(0, 7), actual: null, projected: d.value });
+  });
+  return merged;
 }
 
 function EWSeverityIcon({ severity }: { severity: EarlyWarningAlert['severity'] }) {
@@ -68,6 +64,19 @@ function StatusBadge({ status }: { status: CovenantReading['status'] }) {
   return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${bg}`}>{label}</span>;
 }
 
+function fmtCov(value: number | undefined, format: string): string {
+  if (value === undefined || value === null) return '\u2014';
+  if (format === 'percent') return `${value}%`;
+  if (format === 'ratio') return `${value}x`;
+  return String(value);
+}
+
+function computeHeadroom(cov: CovenantDef, actual: number | undefined): { value: number; label: string } | null {
+  if (actual === undefined) return null;
+  const diff = (cov.operator === '>=' || cov.operator === '>') ? actual - cov.threshold : cov.threshold - actual;
+  return { value: diff, label: diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1) };
+}
+
 type TabId = 'covenants' | 'early-warnings';
 
 export default function CovenantsPage() {
@@ -80,8 +89,13 @@ export default function CovenantsPage() {
   const tabFromUrl = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl === 'early-warnings' ? 'early-warnings' : 'covenants');
   const [collectionSlider, setCollectionSlider] = useState(98.2);
+  const [ewMetric, setEwMetric] = useState<'crar' | 'collectionEfficiency' | 'par30'>('crar');
 
-  const crarChartData = useMemo(() => formatChartData(ewData.crarTrend), []);
+  const ewCharts = useMemo(() => ({
+    crar: { label: 'CRAR Movement & Projection', data: formatChartData(ewData.crarTrend), threshold: ewData.crarTrend.threshold, domain: [12, 18] as [number, number] },
+    collectionEfficiency: { label: 'Collection Efficiency Trend', data: formatChartData(ewData.collectionEfficiencyTrend), threshold: ewData.collectionEfficiencyTrend.threshold, domain: [96, 100] as [number, number] },
+    par30: { label: 'PAR 30 Trend', data: formatChartData(ewData.par30Trend), threshold: ewData.par30Trend.threshold, domain: [0, 8] as [number, number] },
+  }), []);
   const scenarioImpact = useMemo(() => {
     const baseEfficiency = 98.2;
     const delta = collectionSlider - baseEfficiency;
@@ -145,6 +159,22 @@ export default function CovenantsPage() {
     return covenants.filter(c => latestReadings.get(c.id)?.status === 'breached');
   }, [covenants, latestReadings]);
 
+  const covenantHistoryData = useMemo(() => {
+    const dateSet = new Set<string>();
+    readings.forEach(r => dateSet.add(r.date));
+    const dates = Array.from(dateSet).sort();
+    return dates.map(date => {
+      const row: Record<string, string | number | null> = { date: date.slice(0, 7) };
+      covenants.forEach(cov => {
+        const reading = readings.filter(r => r.covenantId === cov.id && r.date <= date).sort((a, b) => b.date.localeCompare(a.date))[0];
+        row[cov.metric] = reading ? reading.value : null;
+      });
+      return row;
+    });
+  }, [readings, covenants]);
+
+  const HISTORY_COLORS = ['#003366', '#0066cc', '#e67300', '#339966', '#cc3333', '#9933cc'];
+
   const computeBuckets = (rules: ProvisioningRule[]) => {
     const buckets = rules.map(r => ({
       ...r,
@@ -202,15 +232,21 @@ export default function CovenantsPage() {
 
         {activeTab === 'early-warnings' && (
           <>
+            <div className="flex gap-2 mb-4">
+              {([{ key: 'crar' as const, label: 'CRAR' }, { key: 'collectionEfficiency' as const, label: 'Collection Efficiency' }, { key: 'par30' as const, label: 'PAR 30' }]).map(m => (
+                <button key={m.key} onClick={() => setEwMetric(m.key)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${ewMetric === m.key ? 'bg-[#003366] text-white border-[#003366]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#003366] hover:text-[#003366]'}`}>{m.label}</button>
+              ))}
+            </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-sm font-bold text-[#003366] mb-4">CRAR Movement & Projection</h2>
+              <h2 className="text-sm font-bold text-[#003366] mb-4">{ewCharts[ewMetric].label}</h2>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={crarChartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <LineChart data={ewCharts[ewMetric].data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[12, 18]} tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} />
+                  <YAxis domain={ewCharts[ewMetric].domain} tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v}%`} />
                   <Tooltip formatter={(val: unknown) => [`${val}%`, '']} labelFormatter={(label: unknown) => `Period: ${label}`} />
-                  <ReferenceLine y={ewData.crarTrend.threshold} stroke="#ef4444" strokeDasharray="8 4" label={{ value: `Threshold: ${ewData.crarTrend.threshold}%`, position: 'right', fill: '#ef4444', fontSize: 11 }} />
+                  <Legend />
+                  <ReferenceLine y={ewCharts[ewMetric].threshold} stroke="#ef4444" strokeDasharray="8 4" label={{ value: `Threshold: ${ewCharts[ewMetric].threshold}%`, position: 'right', fill: '#ef4444', fontSize: 11 }} />
                   <Line type="monotone" dataKey="actual" stroke="#003366" strokeWidth={2.5} dot={{ r: 4, fill: '#003366' }} name="Actual" connectNulls={false} />
                   <Line type="monotone" dataKey="projected" stroke="#003366" strokeWidth={2} strokeDasharray="8 4" dot={{ r: 3, fill: '#003366' }} name="Projected" connectNulls={false} />
                 </LineChart>
@@ -331,6 +367,61 @@ export default function CovenantsPage() {
           })}
         </div>
 
+        {/* Full Covenant Summary Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Full Covenant Summary</h2>
+          <table className="w-full text-xs">
+            <thead><tr className="bg-gray-50 border-b border-gray-200">
+              <th className="text-left px-4 py-2.5 font-semibold text-gray-500">Metric</th>
+              <th className="text-left px-4 py-2.5 font-semibold text-gray-500">Frequency</th>
+              <th className="text-right px-4 py-2.5 font-semibold text-gray-500">Threshold</th>
+              <th className="text-right px-4 py-2.5 font-semibold text-gray-500">Actual</th>
+              <th className="text-right px-4 py-2.5 font-semibold text-gray-500">Headroom</th>
+              <th className="text-center px-4 py-2.5 font-semibold text-gray-500">Trend</th>
+              <th className="text-center px-4 py-2.5 font-semibold text-gray-500">Status</th>
+            </tr></thead>
+            <tbody>
+              {covenants.map(cov => {
+                const latest = latestReadings.get(cov.id);
+                const prev = prevReadings.get(cov.id);
+                const headroom = computeHeadroom(cov, latest?.value);
+                const trending = latest && prev ? (latest.value > prev.value ? 'up' : latest.value < prev.value ? 'down' : 'stable') : 'stable';
+                const isGoodTrend = (cov.operator === '>=' || cov.operator === '>') ? trending === 'up' : trending === 'down';
+                return (
+                  <tr key={cov.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-4 py-3 font-medium text-gray-800">{cov.metric}</td>
+                    <td className="px-4 py-3 text-gray-500 capitalize">{cov.frequency}</td>
+                    <td className="px-4 py-3 text-right font-mono">{cov.operator} {fmtCov(cov.threshold, cov.format)}</td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold">{fmtCov(latest?.value, cov.format)}</td>
+                    <td className="px-4 py-3 text-right">{headroom && <span className={`font-mono font-medium ${headroom.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>{headroom.label}{cov.format === 'percent' ? ' pp' : cov.format === 'ratio' ? 'x' : ''}</span>}</td>
+                    <td className="px-4 py-3 text-center"><span className={`inline-flex items-center gap-0.5 ${isGoodTrend ? 'text-green-600' : trending === 'stable' ? 'text-gray-400' : 'text-red-500'}`}>{trending === 'up' && <TrendingUp className="w-3.5 h-3.5" />}{trending === 'down' && <TrendingDown className="w-3.5 h-3.5" />}{trending === 'stable' && <Minus className="w-3.5 h-3.5" />}</span></td>
+                    <td className="px-4 py-3 text-center">{latest && <StatusBadge status={latest.status} />}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Historical Covenant Readings Chart */}
+        {covenantHistoryData.length > 0 && covenants.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-sm font-bold text-[#003366] mb-4">Covenant Value History</h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={covenantHistoryData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                {covenants.map((cov, i) => (
+                  <Line key={cov.id} type="monotone" dataKey={cov.metric} stroke={HISTORY_COLORS[i % HISTORY_COLORS.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* Dual NPL View */}
         <h2 className="text-sm font-bold text-[#003366] mb-3 flex items-center gap-2">
           <Eye className="w-4 h-4" /> Dual Provisioning Policy Comparison
@@ -338,7 +429,7 @@ export default function CovenantsPage() {
         <div className="grid grid-cols-2 gap-6 mb-8">
           {[
             { title: 'NBFI Provisioning Policy', rules: provRules?.nbfi },
-            { title: 'NCBA Provisioning Policy', rules: provRules?.ncba },
+            { title: 'Lender Provisioning Policy', rules: provRules?.lender },
           ].map(({ title, rules }) => (
             <div key={title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">{title}</h3>
@@ -464,12 +555,7 @@ export default function CovenantsPage() {
           </div>
         )}
 
-        {breachedCovenants.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-green-200 p-6 text-center">
-            <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-green-700">All covenants are compliant</p>
-          </div>
-        )}
+
       </main>
     </div>
   );

@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 
 export const metadata: Metadata = {
-  title: "NCBA - NBFI Assessment Platform",
+  title: "Wholesale Lender - NBFI Assessment Platform",
   description: "Risk Infrastructure Platform for NBFI Financial Statement Assessment",
 };
 

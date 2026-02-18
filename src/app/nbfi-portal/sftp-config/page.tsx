@@ -22,7 +22,7 @@ export default function SFTPConfigPage() {
 
   const [host, setHost] = useState('sftp.premiercredit.co.ke');
   const [port, setPort] = useState('22');
-  const [username, setUsername] = useState('ncba_sync');
+  const [username, setUsername] = useState('lender_sync');
   const [remotePath, setRemotePath] = useState('/exports/loanbook/');
   const [authMethod, setAuthMethod] = useState<'key' | 'password'>('key');
   const [schedule, setSchedule] = useState('daily_06');
@@ -72,7 +72,7 @@ export default function SFTPConfigPage() {
               SFTP Configuration
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Set up your SFTP connection so NCBA can automatically pull your daily loan book data.
+              Set up your SFTP connection so the lender can automatically pull your daily loan book data.
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export default function SFTPConfigPage() {
                       Add this public key to your SFTP server&apos;s authorized_keys file:
                     </p>
                     <code className="block mt-2 p-3 bg-white rounded text-xs font-mono text-gray-700 break-all border border-emerald-100">
-                      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7...ncba-platform@kaleidofin.com
+                      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7...platform@kaleidofin.com
                     </code>
                   </div>
                 </div>

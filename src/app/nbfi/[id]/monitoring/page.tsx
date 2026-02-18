@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { LoanLevelRow } from '@/lib/types';
 import {
   Activity, Users, Banknote, TrendingDown,
-  Target, Layers, Building2, Download, X, AlertTriangle,
+  Target, Layers, Building2, Download, X, AlertTriangle, Shield, Gauge, ArrowDownRight, FileCheck,
 } from 'lucide-react';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import Link from 'next/link';
@@ -20,7 +20,10 @@ import {
   TRANSITION_MATRIX, TICKET_SIZES, ticketBucket,
   computeFinancialSummary, computeECL, rollRateProjection,
   computeVintageData, computeVintageCurves, computeStressIndicators,
-  generateTrendData, estimateLoss,
+  generateTrendData, estimateLoss, computeCureRate, computeCNL, computeCDR,
+  computeHHI, hhiLabel, computeRepaymentVelocity, vpInterpretation,
+  computeBorrowingBase, computeEligibilityWaterfall, computeShadowReconciliation,
+  type ScenarioKey, type EligibilityStep,
 } from '@/lib/rollRate';
 import { TRANSACTION_MAP, TRANSACTION_NAMES, getNbfiIdForTransaction } from '@/lib/seedTransactions';
 
@@ -158,6 +161,21 @@ export default function MonitoringPage() {
   const trendMonths = trendPeriod === '3M' ? 3 : trendPeriod === '6M' ? 6 : 12;
   const trendData = useMemo(() => generateTrendData(filtered, trendMonths), [filtered, trendMonths]);
 
+  const rollScenario = useState<ScenarioKey>('base');
+  const [scenario, setScenario] = rollScenario;
+  const rollRateScenario = useMemo(() => rollRateProjection(filtered, 3, scenario), [filtered, scenario]);
+  const cureRate = useMemo(() => computeCureRate(filtered), [filtered]);
+  const cnl = useMemo(() => computeCNL(filtered), [filtered]);
+  const cdr = useMemo(() => computeCDR(filtered), [filtered]);
+  const geoHHI = useMemo(() => computeHHI(filtered, r => r.geography || 'Unknown'), [filtered]);
+  const prodHHI = useMemo(() => computeHHI(filtered, r => r.product || 'Unknown'), [filtered]);
+  const repayVelocity = useMemo(() => computeRepaymentVelocity(filtered), [filtered]);
+  const vpInfo = useMemo(() => vpInterpretation(repayVelocity.vp), [repayVelocity.vp]);
+  const facilityAmt = scope === 'transaction' ? (nbfi?.fundingAmount ?? 0) : scope === 'nbfi' ? (nbfi?.fundingAmount ?? 0) : nbfis.reduce((s, n) => s + n.fundingAmount, 0);
+  const borrowingBase = useMemo(() => computeBorrowingBase(filtered, facilityAmt), [filtered, facilityAmt]);
+  const eligibility = useMemo(() => computeEligibilityWaterfall(filtered), [filtered]);
+  const shadow = useMemo(() => computeShadowReconciliation(filtered), [filtered]);
+
   const nbfiGroups = useMemo(() => {
     const m: Record<string, LoanWithNbfi[]> = {};
     filteredTagged.forEach(r => { const nid = (r as LoanWithNbfi)._nbfiId ?? ''; if (!m[nid]) m[nid] = []; m[nid].push(r as LoanWithNbfi); });
@@ -206,7 +224,7 @@ export default function MonitoringPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-800">Risk Monitoring Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (${nbfiTxIds.length} transaction${nbfiTxIds.length > 1 ? 's' : ''})` : 'NCBA Full Portfolio'}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (${nbfiTxIds.length} transaction${nbfiTxIds.length > 1 ? 's' : ''})` : 'Full Portfolio'}</p>
           </div>
           <button type="button" onClick={handleExport} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Download className="w-4 h-4" /> Export CSV</button>
         </div>
@@ -247,7 +265,7 @@ export default function MonitoringPage() {
           <div className="grid grid-cols-4 gap-3 mb-5">
             <MetricCard label="Gross Loss" value={fmt(financials.grossLoss)} sub={`${financials.writeOffCount} write-offs`} color="red" />
             <MetricCard label="Net Loss" value={fmt(financials.netLoss)} sub={`Recovery: ${pct(financials.recoveryRate)}`} color="red" />
-            <MetricCard label="Provisions (NCBA)" value={fmt(financials.provisions)} sub={`of ${fmt(financials.totalBal)} balance`} color="amber" />
+            <MetricCard label="Provisions (Lender)" value={fmt(financials.provisions)} sub={`of ${fmt(financials.totalBal)} balance`} color="amber" />
             <MetricCard label="Avg Interest Rate" value={pct(financials.avgInterest)} sub="Weighted by balance" color="blue" />
           </div>
           <div className="grid grid-cols-4 gap-3 mb-5">
@@ -274,25 +292,30 @@ export default function MonitoringPage() {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
-            <h2 className="text-sm font-bold text-[#003366] mb-1">Roll-Rate Projection</h2>
-            <p className="text-[10px] text-gray-500 mb-3">Transition matrix methodology &mdash; projected balance migration over 2 periods</p>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-bold text-[#003366]">Roll-Rate Projection</h2>
+              <div className="flex gap-1">{(['base', 'stress', 'severe'] as ScenarioKey[]).map(s => (
+                <button key={s} onClick={() => setScenario(s)} className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors ${scenario === s ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{s.charAt(0).toUpperCase() + s.slice(1)}</button>
+              ))}</div>
+            </div>
+            <p className="text-[10px] text-gray-500 mb-3">Markov chain forward projection &mdash; {scenario} scenario over 3 months | Cure Rate: {cureRate.rate.toFixed(1)}%</p>
             <div className="grid grid-cols-2 gap-5">
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-2 py-1.5">From \ To</th>{DPD_BUCKETS.map(b => <th key={b} className="text-right px-2 py-1.5">{b}</th>)}</tr></thead>
                 <tbody>{DPD_BUCKETS.map(from => (<tr key={from} className="border-b border-gray-100"><td className="px-2 py-1.5 font-semibold">{from}</td>{DPD_BUCKETS.map(to => { const v = TRANSITION_MATRIX[from]?.[to]; return <td key={to} className={`px-2 py-1.5 text-right font-mono ${v && v > 0.3 ? 'text-red-600 font-semibold' : v ? 'text-gray-700' : 'text-gray-300'}`}>{v ? `${(v * 100).toFixed(0)}%` : '-'}</td>; })}</tr>))}</tbody></table>
               </div>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={rollRate}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="period" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1e6).toFixed(0)}M`} /><Tooltip formatter={(val: unknown) => [fmt(Number(val))]} /><Legend wrapperStyle={{ fontSize: 10 }} />{DPD_BUCKETS.map((b, i) => <Bar key={b} dataKey={b} stackId="a" fill={COLORS[i % COLORS.length]} />)}</BarChart>
+                <BarChart data={rollRateScenario}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="period" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1e6).toFixed(0)}M`} /><Tooltip formatter={(val: unknown) => [fmt(Number(val))]} /><Legend wrapperStyle={{ fontSize: 10 }} />{DPD_BUCKETS.map((b, i) => <Bar key={b} dataKey={b} stackId="a" fill={COLORS[i % COLORS.length]} />)}</BarChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
-            <h2 className="text-sm font-bold text-[#003366] mb-1">Vintage Analysis</h2>
-            <p className="text-[10px] text-gray-500 mb-3">Cohort-based loss analysis by disbursement quarter</p>
+            <h2 className="text-sm font-bold text-[#003366] mb-1">Vintage Analysis &amp; CNL Curves</h2>
+            <p className="text-[10px] text-gray-500 mb-3">Cohort-based loss analysis with Cumulative Net Loss curves by months-on-book</p>
             <div className="grid grid-cols-2 gap-5">
               <div className="overflow-x-auto">
-                <table className="w-full text-[11px]"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-2 py-1.5">Vintage</th><th className="text-right px-2 py-1.5">Loans</th><th className="text-right px-2 py-1.5">Disbursed</th><th className="text-right px-2 py-1.5">Balance</th><th className="text-right px-2 py-1.5">DPD 30+</th><th className="text-right px-2 py-1.5">DPD 90+</th><th className="text-right px-2 py-1.5">Est Loss</th></tr></thead>
-                <tbody>{vintageDataArr.map(v => (<tr key={v.vintage} className="border-b border-gray-100"><td className="px-2 py-1.5 font-mono font-semibold">{v.vintage}</td><td className="px-2 py-1.5 text-right">{v.count}</td><td className="px-2 py-1.5 text-right font-mono">{fmt(v.disbursed)}</td><td className="px-2 py-1.5 text-right font-mono">{fmt(v.balance)}</td><td className={`px-2 py-1.5 text-right ${v.dpd30Pct > 15 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.dpd30Pct)}</td><td className={`px-2 py-1.5 text-right ${v.dpd90Pct > 5 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.dpd90Pct)}</td><td className={`px-2 py-1.5 text-right ${v.estLossRate > 10 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.estLossRate)}</td></tr>))}</tbody></table>
+                <table className="w-full text-[11px]"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-2 py-1.5">Vintage</th><th className="text-right px-2 py-1.5">Loans</th><th className="text-right px-2 py-1.5">Disbursed</th><th className="text-right px-2 py-1.5">Balance</th><th className="text-right px-2 py-1.5">DPD 30+</th><th className="text-right px-2 py-1.5">DPD 90+</th><th className="text-right px-2 py-1.5">CNL</th><th className="text-right px-2 py-1.5">Est Loss</th></tr></thead>
+                <tbody>{vintageDataArr.map(v => (<tr key={v.vintage} className="border-b border-gray-100"><td className="px-2 py-1.5 font-mono font-semibold">{v.vintage}</td><td className="px-2 py-1.5 text-right">{v.count}</td><td className="px-2 py-1.5 text-right font-mono">{fmt(v.disbursed)}</td><td className="px-2 py-1.5 text-right font-mono">{fmt(v.balance)}</td><td className={`px-2 py-1.5 text-right ${v.dpd30Pct > 15 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.dpd30Pct)}</td><td className={`px-2 py-1.5 text-right ${v.dpd90Pct > 5 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.dpd90Pct)}</td><td className="px-2 py-1.5 text-right font-mono">{pct(v.cnl)}</td><td className={`px-2 py-1.5 text-right ${v.estLossRate > 10 ? 'text-red-600 font-semibold' : ''}`}>{pct(v.estLossRate)}</td></tr>))}</tbody></table>
               </div>
               {vintageCurves.vintages.length > 0 && <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={vintageCurves.data}><CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" /><XAxis dataKey="mob" tick={{ fontSize: 10 }} label={{ value: 'MOB', position: 'bottom', fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${v}%`} /><Tooltip formatter={(val: unknown) => [`${Number(val).toFixed(2)}%`]} /><Legend wrapperStyle={{ fontSize: 9 }} />{vintageCurves.vintages.map((v, i) => <Line key={v} type="monotone" dataKey={v} stroke={COLORS[i % COLORS.length]} strokeWidth={1.5} dot={false} />)}</LineChart>
@@ -312,6 +335,90 @@ export default function MonitoringPage() {
               ))}
             </div>
           </div>
+          {/* Wholesale Best Practices Sections */}
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h3 className="text-xs font-bold text-[#003366] mb-2 flex items-center gap-1.5"><Gauge className="w-3.5 h-3.5" /> Repayment Velocity</h3>
+              <p className={`text-2xl font-bold ${vpInfo.color}`}>{repayVelocity.vp.toFixed(3)}</p>
+              <p className={`text-xs font-medium ${vpInfo.color} mt-1`}>{vpInfo.label}</p>
+              <p className="text-[10px] text-gray-400 mt-1">{vpInfo.detail}</p>
+              <p className="text-[10px] text-gray-400 mt-2">Scheduled: {fmt(repayVelocity.scheduledTotal)}/mo | Actual: {fmt(repayVelocity.actualTotal)}/mo</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h3 className="text-xs font-bold text-[#003366] mb-2 flex items-center gap-1.5"><ArrowDownRight className="w-3.5 h-3.5" /> Cure Rate</h3>
+              <p className="text-2xl font-bold text-gray-900">{cureRate.rate.toFixed(1)}%</p>
+              <p className="text-[10px] text-gray-400 mt-1">of delinquent balance returning to 1-30 DPD</p>
+              <p className="text-[10px] text-gray-400 mt-1">Cured: {fmt(cureRate.curedBalance)} / {fmt(cureRate.delinquentBalance)}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h3 className="text-xs font-bold text-[#003366] mb-2 flex items-center gap-1.5"><Target className="w-3.5 h-3.5" /> Loss Metrics</h3>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div><p className="text-[10px] text-gray-500">CNL</p><p className={`text-sm font-bold ${cnl.cnl > 3 ? 'text-red-600' : 'text-gray-900'}`}>{cnl.cnl.toFixed(2)}%</p></div>
+                <div><p className="text-[10px] text-gray-500">CDR (ann.)</p><p className={`text-sm font-bold ${cdr.cdr > 10 ? 'text-red-600' : 'text-gray-900'}`}>{cdr.cdr.toFixed(2)}%</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+            <h2 className="text-sm font-bold text-[#003366] mb-1 flex items-center gap-2"><Shield className="w-4 h-4" /> Borrowing Base & Eligibility</h2>
+            <p className="text-[10px] text-gray-500 mb-3">Eligible collateral vs facility amount with advance rates by risk bucket</p>
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-blue-50 rounded-lg p-3"><p className="text-[10px] text-blue-500">Borrowing Base</p><p className="text-lg font-bold text-blue-700">{fmt(borrowingBase.borrowingBase)}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-500">Facility Amount</p><p className="text-lg font-bold text-gray-700">{fmt(borrowingBase.facilityAmount)}</p></div>
+                  <div className={`rounded-lg p-3 ${borrowingBase.headroom >= 0 ? 'bg-green-50' : 'bg-red-50'}`}><p className="text-[10px] text-gray-500">Headroom</p><p className={`text-lg font-bold ${borrowingBase.headroom >= 0 ? 'text-green-700' : 'text-red-700'}`}>{fmt(borrowingBase.headroom)}</p></div>
+                  <div className="bg-gray-50 rounded-lg p-3"><p className="text-[10px] text-gray-500">Utilization</p><p className="text-lg font-bold text-gray-700">{borrowingBase.utilizationPct}%</p></div>
+                </div>
+                <p className="text-[10px] text-gray-400">Eligible loans: {borrowingBase.eligibleCount.toLocaleString()} | Ineligible: {borrowingBase.ineligibleCount.toLocaleString()}</p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600 mb-2">Eligibility Waterfall</h3>
+                <table className="w-full text-[11px]"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-2 py-1.5">Criteria</th><th className="text-right px-2 py-1.5">Pass</th><th className="text-right px-2 py-1.5">Fail</th><th className="text-right px-2 py-1.5">Eligible Bal</th></tr></thead>
+                <tbody>{eligibility.map((s: EligibilityStep, i: number) => (<tr key={i} className="border-b border-gray-100"><td className="px-2 py-1.5">{s.criteria}</td><td className="px-2 py-1.5 text-right text-green-600">{s.passCount}</td><td className="px-2 py-1.5 text-right text-red-500">{s.failCount}</td><td className="px-2 py-1.5 text-right font-mono">{fmt(s.cumEligibleBalance)}</td></tr>))}</tbody></table>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5 mb-5">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h2 className="text-sm font-bold text-[#003366] mb-3">Concentration Risk (HHI)</h2>
+              {[{ label: 'Geography', data: geoHHI }, { label: 'Product', data: prodHHI }].map(({ label, data }) => {
+                const info = hhiLabel(data.hhi);
+                return (
+                  <div key={label} className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-600">{label}</span>
+                      <span className={`text-xs font-bold ${info.color}`}>{data.hhi.toFixed(4)} &mdash; {info.label}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className={`h-2 rounded-full ${data.hhi < 0.1 ? 'bg-green-400' : data.hhi < 0.18 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${Math.min(data.hhi * 400, 100)}%` }} />
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">{data.segments.slice(0, 5).map(s => (<span key={s.name} className="text-[10px] text-gray-500 bg-gray-50 rounded px-1.5 py-0.5">{s.name}: {(s.share * 100).toFixed(1)}%</span>))}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h2 className="text-sm font-bold text-[#003366] mb-1 flex items-center gap-2"><FileCheck className="w-4 h-4" /> Shadow Accounting Reconciliation</h2>
+              <p className="text-[10px] text-gray-500 mb-3">Three-way reconciliation: Loan Tape vs Shadow Ledger vs Bank Statement</p>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-blue-50 rounded-lg p-2.5"><p className="text-[10px] text-blue-500 mb-0.5">Loan Tape</p><p className="text-xs font-bold">Δ Principal: {fmt(shadow.loanTape.principalReduction)}</p><p className="text-[10px] text-gray-400">{shadow.loanTape.loanCount.toLocaleString()} loans</p></div>
+                <div className="bg-purple-50 rounded-lg p-2.5"><p className="text-[10px] text-purple-500 mb-0.5">Shadow Ledger</p><p className="text-xs font-bold">Expected: {fmt(shadow.shadowLedger.expectedPrincipal)}</p><p className="text-[10px] text-gray-400">Interest: {fmt(shadow.shadowLedger.interestCalc)}</p></div>
+                <div className="bg-green-50 rounded-lg p-2.5"><p className="text-[10px] text-green-600 mb-0.5">Bank Statement</p><p className="text-xs font-bold">Collections: {fmt(shadow.bankStatement.cashCollections)}</p><p className="text-[10px] text-gray-400">Deposits: {fmt(shadow.bankStatement.deposits)}</p></div>
+              </div>
+              <div className={`rounded-lg p-3 border ${shadow.reconciliation.status === 'reconciled' ? 'bg-green-50 border-green-200' : shadow.reconciliation.status === 'minor_variance' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold">{shadow.reconciliation.status === 'reconciled' ? 'Reconciled' : shadow.reconciliation.status === 'minor_variance' ? 'Minor Variance' : 'Material Variance'}</p>
+                    <p className="text-[10px] text-gray-500">Cash Drag: {fmt(shadow.reconciliation.cashDrag)} ({shadow.reconciliation.cashDragPct}%)</p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${shadow.reconciliation.status === 'reconciled' ? 'bg-green-100 text-green-700' : shadow.reconciliation.status === 'minor_variance' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{shadow.reconciliation.status.replace(/_/g, ' ')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {scope === 'portfolio' && riskRanking.length > 0 && (<>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
               <h2 className="text-sm font-bold text-[#003366] mb-3">NBFI Performance Breakdown</h2>

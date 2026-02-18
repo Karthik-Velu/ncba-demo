@@ -10,7 +10,7 @@
     "submissions": [
       { "date": "2025-11-28", "filename": "MIS_Report_Nov2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
       { "date": "2025-10-30", "filename": "MIS_Report_Oct2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
-      { "date": "2025-09-29", "filename": "MIS_Report_Sep2025.pdf", "uploadedBy": "NCBA Upload" }
+      { "date": "2025-09-29", "filename": "MIS_Report_Sep2025.pdf", "uploadedBy": "Lender Upload" }
     ]
   },
   {
@@ -31,7 +31,7 @@
     "nextDueDate": "2025-10-31",
     "status": "overdue",
     "submissions": [
-      { "date": "2025-07-15", "filename": "Financials_Q2_2025.pdf", "uploadedBy": "NCBA Upload" },
+      { "date": "2025-07-15", "filename": "Financials_Q2_2025.pdf", "uploadedBy": "Lender Upload" },
       { "date": "2025-04-10", "filename": "Financials_Q1_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" }
     ]
   },
@@ -42,9 +42,9 @@
     "nextDueDate": "2026-03-31",
     "status": "submitted",
     "submittedDate": "2025-08-15",
-    "submittedBy": "NCBA Upload",
+    "submittedBy": "Lender Upload",
     "submissions": [
-      { "date": "2025-08-15", "filename": "Audited_Financials_FY2024.pdf", "uploadedBy": "NCBA Upload" }
+      { "date": "2025-08-15", "filename": "Audited_Financials_FY2024.pdf", "uploadedBy": "Lender Upload" }
     ]
   },
   {
@@ -67,7 +67,7 @@
     "status": "pending",
     "submissions": [
       { "date": "2025-09-12", "filename": "Mgmt_Accounts_Q3_2025.pdf", "uploadedBy": "Alice Wanjiku (NBFI Portal)" },
-      { "date": "2025-06-14", "filename": "Mgmt_Accounts_Q2_2025.pdf", "uploadedBy": "NCBA Upload" }
+      { "date": "2025-06-14", "filename": "Mgmt_Accounts_Q2_2025.pdf", "uploadedBy": "Lender Upload" }
     ]
   }
 ]

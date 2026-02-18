@@ -4,13 +4,20 @@ import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import {
-  LayoutDashboard, UserPlus, LogOut, FileSpreadsheet, Shield,
-  Upload, BarChart3, Filter, Settings, FileText, AlertTriangle,
-  Activity, TrendingUp, CheckCircle2, Lock, CircleDot, ChevronDown,
-  Building2, Home, Wifi,
+  LayoutDashboard, UserPlus, LogOut, FileSpreadsheet,
+  Upload, BarChart3, Settings, FileText, AlertTriangle,
+  Activity, CheckCircle2, Lock, CircleDot, ChevronDown,
+  ChevronUp, Building2, Home, Wifi, Users,
 } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import NotificationBell from './NotificationBell';
+import KaleidofinLogo from './KaleidofinLogo';
+
+const DEMO_USERS = [
+  { role: 'analyst' as const, name: 'Sarah Kimani', label: 'Credit Analyst' },
+  { role: 'approver' as const, name: 'James Ochieng', label: 'Senior Approver' },
+  { role: 'nbfi_user' as const, name: 'Alice Wanjiku', label: 'NBFI Partner' },
+];
 
 export default function Sidebar() {
   const { user, logout, getNBFI } = useApp();
@@ -45,7 +52,7 @@ function GlobalSidebar({ pathname, user, logout }: { pathname: string; user: { n
   ];
 
   return (
-    <SidebarShell user={user} logout={logout} title="NCBA" subtitle="Risk Infrastructure Platform">
+    <SidebarShell user={user} logout={logout}>
       <nav className="flex-1 py-4">
         {links.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
@@ -134,7 +141,7 @@ function NBFIDetailSidebar({ nbfi, nbfiId, pathname, user, logout }: {
   ];
 
   return (
-    <SidebarShell user={user} logout={logout} title="NCBA" subtitle="Risk Infrastructure Platform">
+    <SidebarShell user={user} logout={logout}>
       <div className="px-4 py-3 border-b border-[#003366]">
         <Link href="/dashboard" className="text-xs text-blue-300 hover:text-white">&larr; All NBFIs</Link>
         <p className="text-sm font-medium text-white mt-1 truncate">{nbfi?.name || 'NBFI'}</p>
@@ -207,13 +214,18 @@ function NBFIPortalSidebar({ user, pathname, logout }: { user: { name: string; r
 
   return (
     <aside className="w-64 bg-emerald-900 min-h-screen flex flex-col text-white">
-      <div className="p-6 border-b border-emerald-800">
-        <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-6 h-6 text-emerald-300" />
-          <span className="text-lg font-bold tracking-wide">Premier Credit</span>
+      <div className="p-4 border-b border-emerald-800">
+        <KaleidofinLogo width={110} className="brightness-0 invert opacity-80 mb-2" />
+        <p className="text-xs text-emerald-200">NBFI Partner Portal</p>
+      </div>
+      <div className="px-4 py-3 border-b border-emerald-800 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold shrink-0">
+          {user.name.split(' ').map(n => n[0]).join('')}
         </div>
-        <p className="text-xs text-emerald-200 mt-1">NBFI Partner Portal</p>
-        <p className="text-[10px] text-emerald-300/60 mt-0.5">Powered by Kaleidofin</p>
+        <div className="min-w-0">
+          <p className="text-sm font-medium truncate">{user.name}</p>
+          <p className="text-[10px] text-emerald-300">NBFI Partner</p>
+        </div>
       </div>
       <nav className="flex-1 py-4">
         {links.map(({ href, label, icon: Icon }) => {
@@ -229,15 +241,6 @@ function NBFIPortalSidebar({ user, pathname, logout }: { user: { name: string; r
         })}
       </nav>
       <div className="p-4 border-t border-emerald-800">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold">
-            {user.name.split(' ').map(n => n[0]).join('')}
-          </div>
-          <div>
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-emerald-300 capitalize">NBFI Partner</p>
-          </div>
-        </div>
         <button onClick={logout} className="flex items-center gap-2 text-xs text-emerald-300 hover:text-white transition-colors">
           <LogOut className="w-3 h-3" /> Sign Out
         </button>
@@ -246,48 +249,93 @@ function NBFIPortalSidebar({ user, pathname, logout }: { user: { name: string; r
   );
 }
 
-function SidebarShell({ children, user, logout, title, subtitle }: {
+function UserSwitcher({ user, logout }: { user: { name: string; role: string }; logout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const { login } = useApp();
+  const router = useRouter();
+
+  const handleSwitch = (role: 'analyst' | 'approver' | 'nbfi_user') => {
+    setOpen(false);
+    login(role);
+    if (role === 'nbfi_user') router.push('/nbfi-portal');
+    else router.push('/dashboard');
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 border-b border-[#003366] hover:bg-[#003366]/50 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold shrink-0">
+          {user.name.split(' ').map(n => n[0]).join('')}
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-sm font-medium truncate">{user.name}</p>
+          <p className="text-[10px] text-blue-300 capitalize">{user.role.replace(/_/g, ' ')}</p>
+        </div>
+        <ChevronUp className={`w-3.5 h-3.5 text-blue-300 transition-transform ${open ? '' : 'rotate-180'}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 bottom-full bg-[#001a33] border border-[#003366] rounded-t-lg shadow-lg z-50 overflow-hidden">
+          <p className="px-4 py-2 text-[9px] font-bold uppercase tracking-widest text-blue-400/60 flex items-center gap-1.5">
+            <Users className="w-3 h-3" /> Switch User
+          </p>
+          {DEMO_USERS.map(u => {
+            const active = user.role === u.role;
+            return (
+              <button
+                key={u.role}
+                onClick={() => handleSwitch(u.role)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                  active ? 'bg-[#003366] text-white' : 'text-blue-200 hover:bg-[#003366]/50 hover:text-white'
+                }`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                  u.role === 'nbfi_user' ? 'bg-emerald-500' : 'bg-blue-500'
+                }`}>
+                  {u.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">{u.name}</p>
+                  <p className="text-[10px] text-blue-300/70">{u.label}</p>
+                </div>
+                {active && <CheckCircle2 className="w-3.5 h-3.5 text-green-400 ml-auto shrink-0" />}
+              </button>
+            );
+          })}
+          <div className="border-t border-[#003366]">
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-colors"
+            >
+              <LogOut className="w-3 h-3" /> Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SidebarShell({ children, user, logout }: {
   children: React.ReactNode;
   user: { name: string; role: string };
   logout: () => void;
-  title: string;
-  subtitle: string;
 }) {
   return (
     <aside className="w-64 bg-[#00264d] min-h-screen flex flex-col text-white">
       <div className="p-4 border-b border-[#003366]">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-6 h-6 text-blue-300 shrink-0" />
-              <span className="text-lg font-bold tracking-wide truncate">{title}</span>
-            </div>
-            <p className="text-xs text-blue-200 mt-1">{subtitle}</p>
-            <p className="text-[10px] text-blue-300/60 mt-0.5">Powered by Kaleidofin</p>
-          </div>
+        <div className="flex items-center justify-between gap-2">
+          <KaleidofinLogo width={110} className="brightness-0 invert opacity-90" />
           <div className="shrink-0 [&_button]:text-blue-300 [&_button:hover]:text-white [&_svg]:text-blue-300">
             <NotificationBell />
           </div>
         </div>
+        <p className="text-[10px] text-blue-300/60 mt-1.5">Risk Infrastructure Platform</p>
       </div>
       {children}
-      <div className="p-4 border-t border-[#003366]">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-            {user.name.split(' ').map(n => n[0]).join('')}
-          </div>
-          <div>
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-blue-300 capitalize flex items-center gap-1">
-              <FileSpreadsheet className="w-3 h-3" />
-              {user.role.replace(/_/g, ' ')}
-            </p>
-          </div>
-        </div>
-        <button onClick={logout} className="flex items-center gap-2 text-xs text-blue-300 hover:text-white transition-colors">
-          <LogOut className="w-3 h-3" /> Sign Out
-        </button>
-      </div>
+      <UserSwitcher user={user} logout={logout} />
     </aside>
   );
 }

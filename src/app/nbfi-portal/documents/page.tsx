@@ -87,7 +87,7 @@ export default function DocumentsPage() {
               <Inbox className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium mb-1">No document requirements configured yet.</p>
               <p className="text-sm text-gray-400">
-                Your NCBA relationship manager will set these up.
+                Your relationship manager will set these up.
               </p>
             </div>
           ) : (

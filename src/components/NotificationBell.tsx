@@ -22,33 +22,33 @@ export interface AppAlert {
 
 const MOCK_ALERTS: AppAlert[] = [
   {
-    id: 'a1', severity: 'critical', title: 'Covenant Breach — Premier Credit',
+    id: 'a1', severity: 'critical', title: 'Covenant Breach — Apex Finance',
     message: 'PAR 30+ ratio exceeded threshold (12.3% vs 10% limit). Immediate review required.',
-    timestamp: '2025-02-18T08:30:00Z', nbfiId: 'seed-1', nbfiName: 'Premier Credit',
+    timestamp: '2025-02-18T08:30:00Z', nbfiId: 'seed-1', nbfiName: 'Apex Finance',
     category: 'covenant', read: false, link: '/nbfi/seed-1/covenants',
   },
   {
-    id: 'a2', severity: 'warning', title: 'Data Feed Delayed — Faulu MFI',
+    id: 'a2', severity: 'warning', title: 'Data Feed Delayed — Horizon MFI',
     message: 'Daily loan book upload not received. Last successful feed: 2025-02-16.',
-    timestamp: '2025-02-18T07:00:00Z', nbfiId: 'seed-2', nbfiName: 'Faulu MFI',
+    timestamp: '2025-02-18T07:00:00Z', nbfiId: 'seed-2', nbfiName: 'Horizon MFI',
     category: 'data_feed', read: false, link: '/nbfi/seed-2/integration',
   },
   {
-    id: 'a3', severity: 'warning', title: 'Portfolio Deterioration — Premier Credit',
+    id: 'a3', severity: 'warning', title: 'Portfolio Deterioration — Apex Finance',
     message: 'DPD 90+ balance increased 15% week-over-week. Vintage 2024-Q3 showing elevated losses.',
-    timestamp: '2025-02-17T16:00:00Z', nbfiId: 'seed-1', nbfiName: 'Premier Credit',
+    timestamp: '2025-02-17T16:00:00Z', nbfiId: 'seed-1', nbfiName: 'Apex Finance',
     category: 'portfolio', read: false, link: '/nbfi/seed-1/eda',
   },
   {
-    id: 'a4', severity: 'info', title: 'Document Expiring — Premier Credit',
+    id: 'a4', severity: 'info', title: 'Document Expiring — Apex Finance',
     message: 'Board resolution document expires in 14 days. Request renewal from NBFI.',
-    timestamp: '2025-02-17T10:00:00Z', nbfiId: 'seed-1', nbfiName: 'Premier Credit',
+    timestamp: '2025-02-17T10:00:00Z', nbfiId: 'seed-1', nbfiName: 'Apex Finance',
     category: 'document', read: true, link: '/nbfi/seed-1/documents',
   },
   {
-    id: 'a5', severity: 'success', title: 'Data Feed Received — Premier Credit',
+    id: 'a5', severity: 'success', title: 'Data Feed Received — Apex Finance',
     message: '520 rows loaded successfully via SFTP. All format validations passed.',
-    timestamp: '2025-02-18T06:05:00Z', nbfiId: 'seed-1', nbfiName: 'Premier Credit',
+    timestamp: '2025-02-18T06:05:00Z', nbfiId: 'seed-1', nbfiName: 'Apex Finance',
     category: 'data_feed', read: true, link: '/nbfi/seed-1/integration',
   },
   {

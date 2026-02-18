@@ -30,7 +30,7 @@ export interface NBFIRecord {
   documents?: DocumentRequirement[];
   provisioningRules?: {
     nbfi: ProvisioningRule[];
-    ncba: ProvisioningRule[];
+    lender: ProvisioningRule[];
   };
   earlyWarnings?: EarlyWarningAlert[];
   monitoringData?: MonitoringData;
@@ -202,7 +202,7 @@ export interface PoolSelectionState {
 }
 
 export interface LoanBookUploadMeta {
-  source: 'sftp' | 'ncba_upload' | 'nbfi_portal';
+  source: 'sftp' | 'lender_upload' | 'nbfi_portal';
   uploadedAt: string;
   uploadedBy: string;
   rowCount: number;

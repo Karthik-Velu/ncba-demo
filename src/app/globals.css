@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --ncba-primary: #003366;
-  --ncba-dark: #00264d;
-  --ncba-accent: #0066cc;
-  --ncba-light: #e8f0fe;
+  --wl-primary: #003366;
+  --wl-dark: #00264d;
+  --wl-accent: #0066cc;
+  --wl-light: #e8f0fe;
 }
 
 body {

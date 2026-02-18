@@ -36,7 +36,7 @@ interface AppState {
   setLoanBookData: (nbfiId: string, rows: LoanLevelRow[]) => void;
   selectedPoolByNbfi: Record<string, PoolSelectionState>;
   setPoolSelection: (nbfiId: string, state: PoolSelectionState) => void;
-  saveCovenantSetup: (id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; ncba: ProvisioningRule[] }) => void;
+  saveCovenantSetup: (id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; lender: ProvisioningRule[] }) => void;
   updateDocumentStatus: (id: string, docId: string, status: 'submitted' | 'pending' | 'overdue', date?: string, uploadedBy?: string) => void;
   setLoanBookMeta: (id: string, meta: LoanBookUploadMeta) => void;
 }
@@ -44,9 +44,9 @@ interface AppState {
 const AppContext = createContext<AppState | undefined>(undefined);
 
 const USERS: Record<string, User> = {
-  analyst: { id: '1', name: 'Sarah Kimani', role: 'analyst', email: 'sarah.kimani@ncba.co.ke' },
-  approver: { id: '2', name: 'James Ochieng', role: 'approver', email: 'james.ochieng@ncba.co.ke' },
-  nbfi_user: { id: '3', name: 'Alice Wanjiku', role: 'nbfi_user', email: 'alice.wanjiku@premiercredit.co.ke', nbfiId: 'seed-1' },
+  analyst: { id: '1', name: 'Sarah Kimani', role: 'analyst', email: 'sarah.kimani@lender.co.ke' },
+  approver: { id: '2', name: 'James Ochieng', role: 'approver', email: 'james.ochieng@lender.co.ke' },
+  nbfi_user: { id: '3', name: 'Alice Wanjiku', role: 'nbfi_user', email: 'alice.wanjiku@apexfinance.co.ke', nbfiId: 'seed-1' },
 };
 
 const NBFI_PROVISIONING: ProvisioningRule[] = [
@@ -57,7 +57,7 @@ const NBFI_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'loss', dpdMin: 181, dpdMax: 9999, provisionPercent: 100 },
 ];
 
-const NCBA_PROVISIONING: ProvisioningRule[] = [
+const LENDER_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'normal', dpdMin: 0, dpdMax: 30, provisionPercent: 1 },
   { bucket: 'watch', dpdMin: 31, dpdMax: 60, provisionPercent: 10 },
   { bucket: 'substandard', dpdMin: 61, dpdMax: 90, provisionPercent: 50 },
@@ -77,7 +77,7 @@ const SEED_NBFIS: NBFIRecord[] = NBFI_SEEDS.map((s, idx) => {
     commentary: idx === 0 ? [{ id: 'c1', author: 'Sarah Kimani', role: 'analyst', text: 'Strong financials with consistent growth. Recommend for approval.', timestamp: '2024-08-20T10:00:00Z' }] : [],
     recommendation: idx === 0 ? 'Approved for KES 150M facility based on strong financial performance.' : undefined,
     approverComments: idx === 0 ? 'Approved. Solid track record and adequate capital ratios.' : undefined,
-    provisioningRules: { nbfi: NBFI_PROVISIONING, ncba: NCBA_PROVISIONING },
+    provisioningRules: { nbfi: NBFI_PROVISIONING, lender: LENDER_PROVISIONING },
   };
   if (idx === 0) {
     base.covenants = mockCovenantsData.definitions as CovenantDef[];
@@ -86,7 +86,7 @@ const SEED_NBFIS: NBFIRecord[] = NBFI_SEEDS.map((s, idx) => {
     base.earlyWarnings = mockEarlyWarningsData.alerts as EarlyWarningAlert[];
     base.monitoringData = mockMonitoringData as unknown as MonitoringData;
     base.setupCompleted = true;
-    base.loanBookMeta = { source: 'nbfi_portal', uploadedAt: '2025-11-15T09:30:00Z', uploadedBy: 'Alice Wanjiku', rowCount: 520, totalBalance: 892000000, filename: 'premier_credit_loanbook_Q4_2025.csv' };
+    base.loanBookMeta = { source: 'nbfi_portal', uploadedAt: '2025-11-15T09:30:00Z', uploadedBy: 'Alice Wanjiku', rowCount: 520, totalBalance: 892000000, filename: 'apex_finance_loanbook_Q4_2025.csv' };
   }
   if (s.status === 'monitoring' || s.status === 'setup_complete') {
     base.setupCompleted = true;
@@ -116,7 +116,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedPoolByNbfi, setSelectedPoolByNbfiState] = useState<Record<string, PoolSelectionState>>(SEED_POOL_SELECTION);
 
   useEffect(() => {
-    const saved = localStorage.getItem('ncba-demo-state');
+    const saved = localStorage.getItem('wl-demo-state');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -129,7 +129,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('ncba-demo-state', JSON.stringify({ user, nbfis, loanBookData, selectedPoolByNbfi }));
+    localStorage.setItem('wl-demo-state', JSON.stringify({ user, nbfis, loanBookData, selectedPoolByNbfi }));
   }, [user, nbfis, loanBookData, selectedPoolByNbfi]);
 
   const login = useCallback((role: 'analyst' | 'approver' | 'nbfi_user') => {
@@ -138,7 +138,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('ncba-demo-state');
+    localStorage.removeItem('wl-demo-state');
   }, []);
 
   const addNBFI = useCallback((data: Omit<NBFIRecord, 'id' | 'status' | 'dateOnboarded' | 'financialData' | 'commentary'>) => {
@@ -230,7 +230,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSelectedPoolByNbfiState(prev => ({ ...prev, [nbfiId]: state }));
   }, []);
 
-  const saveCovenantSetup = useCallback((id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; ncba: ProvisioningRule[] }) => {
+  const saveCovenantSetup = useCallback((id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; lender: ProvisioningRule[] }) => {
     setNbfis(prev => prev.map(n =>
       n.id === id ? { ...n, covenants, documents, provisioningRules, setupCompleted: true, status: 'setup_complete' } : n
     ));

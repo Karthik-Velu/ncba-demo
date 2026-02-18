@@ -34,7 +34,7 @@ const DEFAULT_NBFI_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'loss', dpdMin: 181, dpdMax: 9999, provisionPercent: 100 },
 ];
 
-const DEFAULT_NCBA_PROVISIONING: ProvisioningRule[] = [
+const DEFAULT_LENDER_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'normal', dpdMin: 0, dpdMax: 30, provisionPercent: 1 },
   { bucket: 'watch', dpdMin: 31, dpdMax: 60, provisionPercent: 10 },
   { bucket: 'substandard', dpdMin: 61, dpdMax: 90, provisionPercent: 50 },
@@ -47,7 +47,7 @@ const SECURITY_TYPES = [
   { type: 'Corporate Guarantee', description: 'Personal guarantee from directors / parent company', coverage: 'Unlimited', status: 'active' },
   { type: 'Cash Collateral (DSRA)', description: 'Debt Service Reserve Account — 3 months interest cover', coverage: '25%', status: 'active' },
   { type: 'Floating Charge', description: 'Floating charge over all assets of the NBFI', coverage: '100%', status: 'pending' },
-  { type: 'Fixed Deposit Lien', description: 'Lien on fixed deposits held with NCBA', coverage: '15%', status: 'pending' },
+  { type: 'Fixed Deposit Lien', description: 'Lien on fixed deposits held with lender', coverage: '15%', status: 'pending' },
 ];
 
 const BUCKET_LABELS: Record<string, string> = {
@@ -64,7 +64,7 @@ export default function SetupPage() {
   const [covenants, setCovenants] = useState<CovenantDef[]>([]);
   const [documents, setDocuments] = useState<DocumentRequirement[]>([]);
   const [nbfiRules, setNbfiRules] = useState<ProvisioningRule[]>([]);
-  const [ncbaRules, setNcbaRules] = useState<ProvisioningRule[]>([]);
+  const [lenderRules, setLenderRules] = useState<ProvisioningRule[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function SetupPage() {
     setCovenants(nbfi.covenants?.length ? nbfi.covenants : DEFAULT_COVENANTS);
     setDocuments(nbfi.documents?.length ? nbfi.documents : DEFAULT_DOCUMENTS);
     setNbfiRules(nbfi.provisioningRules?.nbfi?.length ? nbfi.provisioningRules.nbfi : DEFAULT_NBFI_PROVISIONING);
-    setNcbaRules(nbfi.provisioningRules?.ncba?.length ? nbfi.provisioningRules.ncba : DEFAULT_NCBA_PROVISIONING);
+    setLenderRules(nbfi.provisioningRules?.lender?.length ? nbfi.provisioningRules.lender : DEFAULT_LENDER_PROVISIONING);
   }, [nbfi]);
 
   if (!user || !nbfi) return null;
@@ -111,7 +111,7 @@ export default function SetupPage() {
   };
 
   const handleSave = () => {
-    saveCovenantSetup(id, covenants, documents, { nbfi: nbfiRules, ncba: ncbaRules });
+    saveCovenantSetup(id, covenants, documents, { nbfi: nbfiRules, lender: lenderRules });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -306,7 +306,7 @@ export default function SetupPage() {
             <div className="grid grid-cols-2 gap-6">
               {[
                 { title: 'NBFI Policy', rules: nbfiRules, setter: setNbfiRules },
-                { title: 'NCBA Policy (with Security Consideration)', rules: ncbaRules, setter: setNcbaRules },
+                { title: 'Lender Policy (with Security Consideration)', rules: lenderRules, setter: setLenderRules },
               ].map(({ title, rules, setter }) => (
                 <div key={title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h2 className="text-sm font-bold text-[#003366] mb-4">{title}</h2>
@@ -361,7 +361,7 @@ export default function SetupPage() {
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> NCBA provisioning rates account for the security package (loan book assignment, guarantees, DSRA).
+                <strong>Note:</strong> Lender provisioning rates account for the security package (loan book assignment, guarantees, DSRA).
                 With adequate collateral coverage, provisioning rates may be adjusted downward. See the <strong>Security &amp; Collateral</strong> tab for details.
               </p>
             </div>
@@ -375,7 +375,7 @@ export default function SetupPage() {
                 <Lock className="w-4 h-4" /> Security Package
               </h2>
               <p className="text-xs text-gray-500 mb-4">
-                Define the collateral and security structure for this transaction. Security coverage impacts NCBA provisioning requirements.
+                Define the collateral and security structure for this transaction. Security coverage impacts Lender provisioning requirements.
               </p>
               <table className="w-full text-sm">
                 <thead>
@@ -419,7 +419,7 @@ export default function SetupPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
-                With 160% total security coverage, NCBA provisioning rates reflect the reduced loss-given-default.
+                With 160% total security coverage, Lender provisioning rates reflect the reduced loss-given-default.
                 Once all security documentation is perfected, provisioning rates may be further optimized.
               </p>
             </div>

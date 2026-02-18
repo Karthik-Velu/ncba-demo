@@ -73,7 +73,7 @@ const FORMAT_TESTS = [
   { name: 'No null values in required fields', pass: false, detail: '2 rows with null Current Balance — auto-filled with 0' },
 ];
 
-type Channel = 'sftp' | 'ncba' | 'nbfi' | null;
+type Channel = 'sftp' | 'lender' | 'nbfi' | null;
 
 export default function LoanBookPage() {
   const { user, getNBFI, setLoanBookData, setLoanBookMeta, loanBookData } = useApp();
@@ -121,7 +121,7 @@ export default function LoanBookPage() {
   const totalBalance = existingRows.reduce((sum, r) => sum + (r.currentBalance ?? 0), 0);
 
   const loadData = useCallback(
-    (source: 'sftp' | 'ncba_upload' | 'nbfi_portal') => {
+    (source: 'sftp' | 'lender_upload' | 'nbfi_portal') => {
       setLoanBookData(id, MOCK_LOAN_BOOK);
       setLoanBookMeta(id, {
         source,
@@ -193,7 +193,7 @@ export default function LoanBookPage() {
         if (i === PROCESS_STAGES.length - 1) {
           setProcessRunning(false);
           setUploadDone(true);
-          loadData('ncba_upload');
+          loadData('lender_upload');
         } else {
           setTimeout(tick, 600);
         }
@@ -294,7 +294,7 @@ export default function LoanBookPage() {
                 <Field label="Hostname" value="sftp.premiercredit.co.ke" />
                 <Field label="Port" value="22" />
                 <Field label="Path" value="/exports/loanbook/" />
-                <Field label="Username" value="ncba_sync" />
+                <Field label="Username" value="lender_sync" />
               </div>
 
               <button
@@ -318,12 +318,12 @@ export default function LoanBookPage() {
             </div>
           </ExpandableCard>
 
-          {/* ─────────────────── 2. NCBA User Upload ─────────────────── */}
+          {/* ─────────────────── 2. Lender Upload ─────────────────── */}
           <ExpandableCard
-            expanded={expanded === 'ncba'}
-            onToggle={() => toggle('ncba')}
+            expanded={expanded === 'lender'}
+            onToggle={() => toggle('lender')}
             icon={<Building2 className="w-5 h-5 text-[#003366]" />}
-            title="NCBA User Upload"
+            title="Lender Upload"
             subtitle="Relationship team uploads the loan-level file received from NBFI."
           >
             <div className="space-y-4">
@@ -558,7 +558,7 @@ export default function LoanBookPage() {
           {/* ─────────────────── 4. Demo dataset ─────────────────── */}
           <div className="pt-2">
             <button
-              onClick={() => loadData('ncba_upload')}
+              onClick={() => loadData('lender_upload')}
               className="text-sm text-[#003366] font-medium hover:underline flex items-center gap-1.5"
             >
               <Database className="w-4 h-4" />
