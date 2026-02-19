@@ -408,7 +408,7 @@ export function computeEligibilityWaterfall(rows: LoanLevelRow[]): EligibilitySt
 }
 
 /* ================================================================
-   Shadow Accounting — Three-Way Reconciliation (simulated)
+   Shadow Accounting — Two-Way Reconciliation (Loan Tape vs Shadow Ledger)
    ================================================================ */
 
 export function computeShadowReconciliation(rows: LoanLevelRow[]) {
@@ -421,15 +421,14 @@ export function computeShadowReconciliation(rows: LoanLevelRow[]) {
   const shadowPrincipal = Math.round(collections - interestCalc);
   const tapePrincipal = Math.round(principalRepaid * 0.08);
   const delinquencyAdj = Math.round(rows.filter(r => r.dpdAsOfReportingDate > 30).reduce((s, r) => s + r.totalOverdueAmount, 0) * 0.02);
-  const cashDrag = tapePrincipal - (collections - interestCalc - delinquencyAdj);
-  const cashDragPct = tapePrincipal > 0 ? (cashDrag / tapePrincipal) * 100 : 0;
-  const status: 'reconciled' | 'minor_variance' | 'material_variance' = Math.abs(cashDragPct) < 1 ? 'reconciled' : Math.abs(cashDragPct) < 5 ? 'minor_variance' : 'material_variance';
+  const variance = tapePrincipal - shadowPrincipal;
+  const variancePct = tapePrincipal > 0 ? (variance / tapePrincipal) * 100 : 0;
+  const status: 'reconciled' | 'minor_variance' | 'material_variance' = Math.abs(variancePct) < 1 ? 'reconciled' : Math.abs(variancePct) < 5 ? 'minor_variance' : 'material_variance';
 
   return {
     loanTape: { principalReduction: tapePrincipal, totalBalance: Math.round(totalBal), loanCount: rows.length },
     shadowLedger: { expectedPrincipal: shadowPrincipal, interestCalc, expectedCollections: collections },
-    bankStatement: { cashCollections: collections + Math.round(cashDrag * 0.3), deposits: collections },
-    reconciliation: { cashDrag: Math.round(cashDrag), cashDragPct: Math.round(cashDragPct * 100) / 100, delinquencyAdj, status },
+    reconciliation: { variance: Math.round(variance), variancePct: Math.round(variancePct * 100) / 100, delinquencyAdj, status },
   };
 }
 

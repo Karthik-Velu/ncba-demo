@@ -4,11 +4,12 @@ import { useApp } from '@/context/AppContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { ArrowLeft, Filter, CheckCircle2, Shield, Download, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Filter, CheckCircle2, Shield, Download, BarChart3, Lock, Play } from 'lucide-react';
 import Link from 'next/link';
-import type { LoanLevelRow, PoolSelectionState } from '@/lib/types';
+import type { LoanLevelRow, PoolSelectionState, SecuritisationStructure } from '@/lib/types';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import { generateMockLoanBook } from '@/lib/mockLoanBook';
+import { runWaterfall, runStressGrid } from '@/lib/securitisationWaterfall';
 
 const LOSS_RATES: Record<string, number> = {
   'Current': 0, '1-30': 0.01, '31-60': 0.10, '61-90': 0.25, '91-180': 0.50, '180+': 1.0,
@@ -31,11 +32,12 @@ function useLoanData(nbfiId: string, loanBookData: Record<string, LoanLevelRow[]
 }
 
 export default function SelectionPage() {
-  const { user, getNBFI, loanBookData, selectedPoolByNbfi, setPoolSelection } = useApp();
+  const { user, getNBFI, loanBookData, selectedPoolByNbfi, setPoolSelection, setTransactionType, setSecuritisationStructure } = useApp();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
+  const nbfiInit = getNBFI(id);
   const rows = useLoanData(id, loanBookData);
   const selection = selectedPoolByNbfi[id];
 
@@ -50,6 +52,18 @@ export default function SelectionPage() {
   const [selectedDpdBuckets, setSelectedDpdBuckets] = useState<string[]>(selection?.filterSnapshot?.dpdBuckets ?? []);
   const [excludedSegments, setExcludedSegments] = useState<string[]>(selection?.excludedSegments ?? []);
   const [confirmed, setConfirmed] = useState(!!selection?.confirmedAt);
+  const [wantSecuritise, setWantSecuritise] = useState(nbfiInit?.transactionType === 'securitisation');
+  const [seniorPct, setSeniorPct] = useState(nbfiInit?.securitisationStructure?.seniorPct ?? 70);
+  const [mezzPct, setMezzPct] = useState(nbfiInit?.securitisationStructure?.mezzaninePct ?? 20);
+  const [equityPct, setEquityPct] = useState(nbfiInit?.securitisationStructure?.equityPct ?? 10);
+  const [ocPct, setOcPct] = useState(nbfiInit?.securitisationStructure?.overCollateralisationPct ?? 10);
+  const [seniorCoupon, setSeniorCoupon] = useState(nbfiInit?.securitisationStructure?.seniorCoupon ?? 8);
+  const [mezzCoupon, setMezzCoupon] = useState(nbfiInit?.securitisationStructure?.mezzanineCoupon ?? 14);
+  const [structureFinalised, setStructureFinalised] = useState(!!nbfiInit?.securitisationStructure?.finalised);
+  const [stressLossRate, setStressLossRate] = useState(6);
+  const [stressPrepay, setStressPrepay] = useState(10);
+  const trancheSum = seniorPct + mezzPct + equityPct;
+  const trancheValid = Math.abs(trancheSum - 100) < 0.01;
 
   useEffect(() => { if (!user) router.push('/'); }, [user, router]);
   const nbfi = getNBFI(id);
@@ -118,6 +132,7 @@ export default function SelectionPage() {
       confirmedAt: new Date().toISOString(),
     };
     setPoolSelection(id, state);
+    if (wantSecuritise) setTransactionType(id, 'securitisation');
     setConfirmed(true);
   };
 
@@ -258,6 +273,86 @@ export default function SelectionPage() {
                 </div>
               </section>
             )}
+
+            {/* Securitisation Structure */}
+            {confirmed && wantSecuritise && (
+              <section className="bg-white rounded-xl border-2 border-purple-300 p-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-purple-600" />
+                  <h2 className="text-sm font-bold text-purple-700">Securitisation Structure</h2>
+                  {structureFinalised && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase">Finalised</span>}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Senior Tranche %</label>
+                    <input type="number" min={0} max={100} step={1} value={seniorPct} onChange={e => setSeniorPct(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Mezzanine Tranche %</label>
+                    <input type="number" min={0} max={100} step={1} value={mezzPct} onChange={e => setMezzPct(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Equity Tranche %</label>
+                    <input type="number" min={0} max={100} step={1} value={equityPct} onChange={e => setEquityPct(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                </div>
+                {!trancheValid && <p className="text-xs text-red-600">Tranches must sum to 100% (currently {trancheSum.toFixed(0)}%)</p>}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Over-collateralisation %</label>
+                    <input type="number" min={0} max={50} step={0.5} value={ocPct} onChange={e => setOcPct(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Senior Coupon %</label>
+                    <input type="number" min={0} max={30} step={0.25} value={seniorCoupon} onChange={e => setSeniorCoupon(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Mezzanine Coupon %</label>
+                    <input type="number" min={0} max={30} step={0.25} value={mezzCoupon} onChange={e => setMezzCoupon(Number(e.target.value))} disabled={structureFinalised}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none disabled:bg-gray-50" />
+                  </div>
+                </div>
+
+                {trancheValid && <SecuritisationStressTest
+                  poolBalance={totalBalance}
+                  avgRate={poolMetrics ? Number(poolMetrics.avgRate) : 15}
+                  structure={{ seniorPct, mezzaninePct: mezzPct, equityPct, overCollateralisationPct: ocPct, seniorCoupon, mezzanineCoupon: mezzCoupon, finalised: structureFinalised }}
+                  stressLossRate={stressLossRate} setStressLossRate={setStressLossRate}
+                  stressPrepay={stressPrepay} setStressPrepay={setStressPrepay}
+                />}
+
+                {!structureFinalised && trancheValid && (
+                  <button
+                    onClick={() => {
+                      const struct: SecuritisationStructure = { seniorPct, mezzaninePct: mezzPct, equityPct, overCollateralisationPct: ocPct, seniorCoupon, mezzanineCoupon: mezzCoupon, finalised: true };
+                      setSecuritisationStructure(id, struct);
+                      setStructureFinalised(true);
+                    }}
+                    className="w-full py-3 bg-purple-700 text-white rounded-lg font-medium text-sm hover:bg-purple-800 transition-colors flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Finalise Tranche Structure
+                  </button>
+                )}
+
+                {structureFinalised && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="w-4 h-4 text-green-600" /><span className="text-sm font-semibold text-green-700">Structure Finalised</span></div>
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div><span className="text-gray-500">Senior:</span> <span className="font-bold">{seniorPct}%</span> at {seniorCoupon}%</div>
+                      <div><span className="text-gray-500">Mezzanine:</span> <span className="font-bold">{mezzPct}%</span> at {mezzCoupon}%</div>
+                      <div><span className="text-gray-500">Equity:</span> <span className="font-bold">{equityPct}%</span></div>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">Over-collateralisation: {ocPct}% | Pool: KES {(totalBalance / 1e6).toFixed(1)}M | Notes: KES {(totalBalance / (1 + ocPct / 100) / 1e6).toFixed(1)}M</p>
+                  </div>
+                )}
+              </section>
+            )}
           </div>
 
           {/* Right Panel - Pool Summary */}
@@ -289,8 +384,17 @@ export default function SelectionPage() {
                   </div>
                 )}
               </div>
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={wantSecuritise} onChange={e => setWantSecuritise(e.target.checked)} disabled={confirmed}
+                    className="rounded border-gray-300 text-[#003366] w-4 h-4" />
+                  <Lock className="w-3.5 h-3.5 text-[#003366]" />
+                  <span className="text-xs font-medium text-gray-700">Securitise the pool</span>
+                </label>
+                {wantSecuritise && <p className="text-[10px] text-gray-400 mt-1 ml-6">Transaction will be structured as a securitisation instead of a wholesale term loan.</p>}
+              </div>
               <button onClick={handleConfirm} disabled={confirmed || filtered.length === 0}
-                className="mt-6 w-full py-3 bg-[#003366] text-white rounded-lg font-medium text-sm hover:bg-[#004d99] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                className="mt-4 w-full py-3 bg-[#003366] text-white rounded-lg font-medium text-sm hover:bg-[#004d99] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
                 {confirmed ? <><CheckCircle2 className="w-4 h-4" /> Pool Confirmed</> : 'Confirm Security Package'}
               </button>
               {confirmed && (
@@ -302,6 +406,92 @@ export default function SelectionPage() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function SecuritisationStressTest({
+  poolBalance, avgRate, structure,
+  stressLossRate, setStressLossRate, stressPrepay, setStressPrepay,
+}: {
+  poolBalance: number; avgRate: number; structure: SecuritisationStructure;
+  stressLossRate: number; setStressLossRate: (v: number) => void;
+  stressPrepay: number; setStressPrepay: (v: number) => void;
+}) {
+  const singleResult = runWaterfall(poolBalance, avgRate, structure, stressLossRate, stressPrepay);
+  const grid = runStressGrid(poolBalance, avgRate, structure, [3, 6, 9, 12, 15], [0, 10, 20, 30]);
+  const fmtM = (n: number) => `${(n / 1e6).toFixed(1)}M`;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-1">
+        <Play className="w-4 h-4 text-purple-600" />
+        <h3 className="text-xs font-bold text-purple-700 uppercase">Cashflow Stress Test</h3>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Loss Rate: {stressLossRate}%</label>
+          <input type="range" min={0} max={20} step={1} value={stressLossRate} onChange={e => setStressLossRate(Number(e.target.value))} className="w-full accent-purple-600" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Prepayment Rate: {stressPrepay}%</label>
+          <input type="range" min={0} max={40} step={5} value={stressPrepay} onChange={e => setStressPrepay(Number(e.target.value))} className="w-full accent-purple-600" />
+        </div>
+      </div>
+
+      <div className="bg-purple-50 rounded-lg p-4">
+        <p className="text-[10px] text-purple-500 mb-2">Scenario: {stressLossRate}% loss, {stressPrepay}% prepayment &mdash; Pool KES {fmtM(poolBalance)}</p>
+        <table className="w-full text-[11px]">
+          <thead><tr className="border-b border-purple-200 text-purple-600 uppercase"><th className="text-left px-2 py-1.5">Tranche</th><th className="text-right px-2 py-1.5">Initial</th><th className="text-right px-2 py-1.5">Int Paid</th><th className="text-right px-2 py-1.5">Prin Paid</th><th className="text-right px-2 py-1.5">End Bal</th><th className="text-right px-2 py-1.5">Shortfall</th><th className="text-right px-2 py-1.5">Coverage</th><th className="text-center px-2 py-1.5">Status</th></tr></thead>
+          <tbody>
+            {singleResult.tranches.map(t => (
+              <tr key={t.tranche} className="border-b border-purple-100">
+                <td className="px-2 py-1.5 font-semibold">{t.tranche}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmtM(t.initialBalance)}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmtM(t.interestPaid)}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmtM(t.principalPaid)}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmtM(t.endBalance)}</td>
+                <td className={`px-2 py-1.5 text-right font-mono ${t.shortfall > 0 ? 'text-red-600 font-semibold' : ''}`}>{fmtM(t.shortfall)}</td>
+                <td className="px-2 py-1.5 text-right">{t.coverageRatio.toFixed(2)}x</td>
+                <td className="px-2 py-1.5 text-center">
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${t.status === 'ok' ? 'bg-green-100 text-green-700' : t.status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{t.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-[10px] text-gray-400 mt-2">Equity residual: KES {fmtM(singleResult.equityResidual)} | Total losses: KES {fmtM(singleResult.totalLosses)}</p>
+      </div>
+
+      <div>
+        <h4 className="text-xs font-bold text-gray-600 mb-2">Scenario Grid (Senior Tranche Status)</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="bg-gray-50 border-b text-gray-500 uppercase">
+                <th className="text-left px-2 py-1.5">Loss \ Prepay</th>
+                {[0, 10, 20, 30].map(p => <th key={p} className="text-center px-2 py-1.5">{p}%</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[3, 6, 9, 12, 15].map(lr => (
+                <tr key={lr} className="border-b border-gray-100">
+                  <td className="px-2 py-1.5 font-semibold">{lr}%</td>
+                  {[0, 10, 20, 30].map(pr => {
+                    const item = grid.find(g => g.lossRate === lr && g.prepayRate === pr);
+                    const senior = item?.result.tranches[0];
+                    const mezz = item?.result.tranches[1];
+                    const color = !senior ? 'bg-gray-100' : senior.status === 'ok' && mezz?.status === 'ok' ? 'bg-green-100 text-green-700' : senior.status === 'ok' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+                    const label = !senior ? '-' : senior.status === 'ok' && mezz?.status === 'ok' ? 'All OK' : senior.status === 'ok' ? 'Mezz stress' : 'Sr impaired';
+                    return <td key={pr} className={`px-2 py-1.5 text-center font-semibold ${color} rounded`}>{label}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

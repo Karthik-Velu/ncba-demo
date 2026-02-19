@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { LoanLevelRow } from '@/lib/types';
 import {
   Activity, Users, Banknote, TrendingDown,
-  Target, Layers, Building2, Download, X, AlertTriangle, Shield, Gauge, ArrowDownRight, FileCheck,
+  Target, Layers, Building2, Download, X, AlertTriangle, Shield, Gauge, ArrowDownRight, FileCheck, Lock,
 } from 'lucide-react';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ import {
   type ScenarioKey, type EligibilityStep,
 } from '@/lib/rollRate';
 import { TRANSACTION_MAP, TRANSACTION_NAMES, getNbfiIdForTransaction } from '@/lib/seedTransactions';
+import { applyPoolSelection, applyPoolSelectionForPortfolio } from '@/lib/poolSelection';
 
 const COLORS = ['#003366', '#0066cc', '#0099ff', '#00ccff', '#66e0ff', '#339966', '#cc6633'];
 type MonScope = 'transaction' | 'nbfi' | 'portfolio';
@@ -91,11 +92,12 @@ function fmt(n: number): string {
 function pct(n: number): string { return `${n.toFixed(1)}%`; }
 
 export default function MonitoringPage() {
-  const { user, getNBFI, loanBookData, nbfis } = useApp();
+  const { user, getNBFI, loanBookData, nbfis, selectedPoolByNbfi } = useApp();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const [scope, setScope] = useState<MonScope>('transaction');
+  const [viewMode, setViewMode] = useState<'overall' | 'security_package'>('overall');
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('12M');
   const [filterProduct, setFilterProduct] = useState<string[]>([]);
   const [filterGeography, setFilterGeography] = useState<string[]>([]);
@@ -129,6 +131,15 @@ export default function MonitoringPage() {
   const sourceLoans = useMemo((): LoanLevelRow[] => scope === 'portfolio' ? allLoansTagged : scope === 'nbfi' ? nbfiLoans : txLoans, [scope, allLoansTagged, nbfiLoans, txLoans]);
   const filtered = useMemo(() => applyFilters(sourceLoans, filterObj), [sourceLoans, filterObj]);
   const filteredTagged = useMemo(() => applyFilters(allLoansTagged, filterObj), [allLoansTagged, filterObj]);
+
+  const securityPackageFiltered = useMemo((): LoanLevelRow[] => {
+    if (scope === 'portfolio') return applyPoolSelectionForPortfolio(applyFilters(allLoansTagged, filterObj), selectedPoolByNbfi);
+    return applyPoolSelection(applyFilters(sourceLoans, filterObj), selectedPoolByNbfi[id]);
+  }, [scope, sourceLoans, allLoansTagged, filterObj, selectedPoolByNbfi, id]);
+  const hasConfirmedPool = scope === 'portfolio'
+    ? Object.values(selectedPoolByNbfi).some(s => !!s.confirmedAt)
+    : !!selectedPoolByNbfi[id]?.confirmedAt;
+  const effectiveRows = viewMode === 'security_package' && hasConfirmedPool ? securityPackageFiltered : filtered;
   const activeFilterCount = [filterProduct, filterGeography, filterSegment, filterDpdBuckets, filterTicketSize].filter(a => a.length > 0).length;
   const allUnfiltered = scope === 'portfolio' ? allLoansTagged : scope === 'nbfi' ? nbfiLoans : txLoans;
   const geoOptions = useMemo(() => [...new Set(allUnfiltered.map(r => r.geography || 'Unknown'))].sort(), [allUnfiltered]);
@@ -137,44 +148,44 @@ export default function MonitoringPage() {
   const clearFilters = () => { setFilterProduct([]); setFilterGeography([]); setFilterSegment([]); setFilterDpdBuckets([]); setFilterTicketSize([]); };
 
   const kpi = useMemo(() => {
-    if (filtered.length === 0) return null;
-    const totalBal = filtered.reduce((s, r) => s + r.currentBalance, 0);
-    const p30 = filtered.filter(r => r.dpdAsOfReportingDate > 30).length;
-    const p90 = filtered.filter(r => r.dpdAsOfReportingDate > 90).length;
-    const nplBal = filtered.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
-    const nbfiCount = scope === 'portfolio' ? new Set((filtered as LoanWithNbfi[]).map(r => r._nbfiId)).size : 1;
-    return { totalLoans: filtered.length, totalBal, nbfiCount, par30: (p30 / filtered.length) * 100, par90: (p90 / filtered.length) * 100, nplRatio: totalBal > 0 ? (nplBal / totalBal) * 100 : 0 };
-  }, [filtered, scope]);
+    if (effectiveRows.length === 0) return null;
+    const totalBal = effectiveRows.reduce((s, r) => s + r.currentBalance, 0);
+    const p30 = effectiveRows.filter(r => r.dpdAsOfReportingDate > 30).length;
+    const p90 = effectiveRows.filter(r => r.dpdAsOfReportingDate > 90).length;
+    const nplBal = effectiveRows.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
+    const nbfiCount = scope === 'portfolio' ? new Set((effectiveRows as LoanWithNbfi[]).map(r => r._nbfiId)).size : 1;
+    return { totalLoans: effectiveRows.length, totalBal, nbfiCount, par30: (p30 / effectiveRows.length) * 100, par90: (p90 / effectiveRows.length) * 100, nplRatio: totalBal > 0 ? (nplBal / totalBal) * 100 : 0 };
+  }, [effectiveRows, scope]);
 
-  const financials = useMemo(() => computeFinancialSummary(filtered), [filtered]);
-  const ecl = useMemo(() => computeECL(filtered), [filtered]);
+  const financials = useMemo(() => computeFinancialSummary(effectiveRows), [effectiveRows]);
+  const ecl = useMemo(() => computeECL(effectiveRows), [effectiveRows]);
   const dpdDist = useMemo(() => {
     const map: Record<string, number> = {};
     DPD_BUCKETS.forEach(b => (map[b] = 0));
-    filtered.forEach(r => { map[getDpdBucket(r.dpdAsOfReportingDate)] += r.currentBalance; });
+    effectiveRows.forEach(r => { map[getDpdBucket(r.dpdAsOfReportingDate)] += r.currentBalance; });
     return DPD_BUCKETS.map(b => ({ bucket: b, balance: map[b] }));
-  }, [filtered]);
-  const rollRate = useMemo(() => rollRateProjection(filtered), [filtered]);
-  const vintageDataArr = useMemo(() => computeVintageData(filtered), [filtered]);
-  const vintageCurves = useMemo(() => computeVintageCurves(filtered), [filtered]);
-  const stressData = useMemo(() => computeStressIndicators(filtered), [filtered]);
+  }, [effectiveRows]);
+  const rollRate = useMemo(() => rollRateProjection(effectiveRows), [effectiveRows]);
+  const vintageDataArr = useMemo(() => computeVintageData(effectiveRows), [effectiveRows]);
+  const vintageCurves = useMemo(() => computeVintageCurves(effectiveRows), [effectiveRows]);
+  const stressData = useMemo(() => computeStressIndicators(effectiveRows), [effectiveRows]);
   const trendMonths = trendPeriod === '3M' ? 3 : trendPeriod === '6M' ? 6 : 12;
-  const trendData = useMemo(() => generateTrendData(filtered, trendMonths), [filtered, trendMonths]);
+  const trendData = useMemo(() => generateTrendData(effectiveRows, trendMonths), [effectiveRows, trendMonths]);
 
   const rollScenario = useState<ScenarioKey>('base');
   const [scenario, setScenario] = rollScenario;
-  const rollRateScenario = useMemo(() => rollRateProjection(filtered, 3, scenario), [filtered, scenario]);
-  const cureRate = useMemo(() => computeCureRate(filtered), [filtered]);
-  const cnl = useMemo(() => computeCNL(filtered), [filtered]);
-  const cdr = useMemo(() => computeCDR(filtered), [filtered]);
-  const geoHHI = useMemo(() => computeHHI(filtered, r => r.geography || 'Unknown'), [filtered]);
-  const prodHHI = useMemo(() => computeHHI(filtered, r => r.product || 'Unknown'), [filtered]);
-  const repayVelocity = useMemo(() => computeRepaymentVelocity(filtered), [filtered]);
+  const rollRateScenario = useMemo(() => rollRateProjection(effectiveRows, 3, scenario), [effectiveRows, scenario]);
+  const cureRate = useMemo(() => computeCureRate(effectiveRows), [effectiveRows]);
+  const cnl = useMemo(() => computeCNL(effectiveRows), [effectiveRows]);
+  const cdr = useMemo(() => computeCDR(effectiveRows), [effectiveRows]);
+  const geoHHI = useMemo(() => computeHHI(effectiveRows, r => r.geography || 'Unknown'), [effectiveRows]);
+  const prodHHI = useMemo(() => computeHHI(effectiveRows, r => r.product || 'Unknown'), [effectiveRows]);
+  const repayVelocity = useMemo(() => computeRepaymentVelocity(effectiveRows), [effectiveRows]);
   const vpInfo = useMemo(() => vpInterpretation(repayVelocity.vp), [repayVelocity.vp]);
   const facilityAmt = scope === 'transaction' ? (nbfi?.fundingAmount ?? 0) : scope === 'nbfi' ? (nbfi?.fundingAmount ?? 0) : nbfis.reduce((s, n) => s + n.fundingAmount, 0);
-  const borrowingBase = useMemo(() => computeBorrowingBase(filtered, facilityAmt), [filtered, facilityAmt]);
-  const eligibility = useMemo(() => computeEligibilityWaterfall(filtered), [filtered]);
-  const shadow = useMemo(() => computeShadowReconciliation(filtered), [filtered]);
+  const borrowingBase = useMemo(() => computeBorrowingBase(effectiveRows, facilityAmt), [effectiveRows, facilityAmt]);
+  const eligibility = useMemo(() => computeEligibilityWaterfall(effectiveRows), [effectiveRows]);
+  const shadow = useMemo(() => computeShadowReconciliation(effectiveRows), [effectiveRows]);
 
   const nbfiGroups = useMemo(() => {
     const m: Record<string, LoanWithNbfi[]> = {};
@@ -210,7 +221,7 @@ export default function MonitoringPage() {
 
   const handleExport = () => {
     const headers = ['loanId', 'product', 'geography', 'segment', 'currentBalance', 'dpdAsOfReportingDate', 'totalOverdueAmount', 'interestRate', 'loanWrittenOff', 'recoveryAfterWriteoff'];
-    const csv = [headers.join(','), ...filtered.map(r => headers.map(h => { const v = (r as unknown as Record<string, unknown>)[h]; return typeof v === 'string' && v.includes(',') ? `"${v}"` : String(v ?? ''); }).join(','))].join('\n');
+    const csv = [headers.join(','), ...effectiveRows.map(r => headers.map(h => { const v = (r as unknown as Record<string, unknown>)[h]; return typeof v === 'string' && v.includes(',') ? `"${v}"` : String(v ?? ''); }).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `risk-${scope}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -234,7 +245,14 @@ export default function MonitoringPage() {
               <button key={key} onClick={() => setScope(key)} className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${scope === key ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Icon className="w-3.5 h-3.5" /> {label}</button>
             ))}
           </div>
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => setViewMode('overall')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'overall' ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Layers className="w-3 h-3" /> Overall</button>
+            <button onClick={() => setViewMode('security_package')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'security_package' ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Lock className="w-3 h-3" /> Security Package</button>
+          </div>
         </div>
+        {viewMode === 'security_package' && !hasConfirmedPool && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-700">No confirmed security package for this scope. Showing overall portfolio data.</div>
+        )}
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <span className="text-xs text-gray-500 font-medium mr-1">Filters:</span>
           <FilterPill label="Product" options={prodOptions} selected={filterProduct} onChange={setFilterProduct} />
@@ -243,7 +261,7 @@ export default function MonitoringPage() {
           <FilterPill label="DPD Bucket" options={[...DPD_BUCKETS]} selected={filterDpdBuckets} onChange={setFilterDpdBuckets} />
           <FilterPill label="Ticket Size" options={[...TICKET_SIZES]} selected={filterTicketSize} onChange={setFilterTicketSize} />
           {activeFilterCount > 0 && <button type="button" onClick={clearFilters} className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded-full"><X className="w-3 h-3" /> Clear all</button>}
-          <span className="ml-auto text-xs text-gray-400">{filtered.length.toLocaleString()} loans</span>
+          <span className="ml-auto text-xs text-gray-400">{effectiveRows.length.toLocaleString()} loans{viewMode === 'security_package' && hasConfirmedPool ? ' (security package)' : ''}</span>
         </div>
         {scope !== 'portfolio' && <div className="mb-5"><TransactionAlertTimeline nbfiId={id} /></div>}
         {scope === 'nbfi' && txBreakdown.length > 1 && (
@@ -262,6 +280,9 @@ export default function MonitoringPage() {
             <KpiCard label="PAR 90+" value={pct(kpi.par90)} icon={<Activity className="w-4 h-4 text-red-500" />} alert={kpi.par90 > 5} />
             <KpiCard label="NPL Ratio" value={pct(kpi.nplRatio)} icon={<Activity className="w-4 h-4 text-orange-500" />} alert={kpi.nplRatio > 5} />
           </div>
+          {hasConfirmedPool && (
+            <ComparisonChart overall={filtered} securityPackage={securityPackageFiltered} />
+          )}
           <div className="grid grid-cols-4 gap-3 mb-5">
             <MetricCard label="Gross Loss" value={fmt(financials.grossLoss)} sub={`${financials.writeOffCount} write-offs`} color="red" />
             <MetricCard label="Net Loss" value={fmt(financials.netLoss)} sub={`Recovery: ${pct(financials.recoveryRate)}`} color="red" />
@@ -270,7 +291,7 @@ export default function MonitoringPage() {
           </div>
           <div className="grid grid-cols-4 gap-3 mb-5">
             <MetricCard label="Total Overdue" value={fmt(financials.totalOverdue)} sub={`${pct(financials.overdueRatio)} of balance`} color="amber" />
-            <MetricCard label="Write-off Rate" value={pct(financials.writeOffRate)} sub={`${financials.writeOffCount} of ${filtered.length}`} color="red" />
+            <MetricCard label="Write-off Rate" value={pct(financials.writeOffRate)} sub={`${financials.writeOffCount} of ${effectiveRows.length}`} color="red" />
             <MetricCard label="Recovery Rate" value={pct(financials.recoveryRate)} sub={fmt(financials.recovery)} color="green" />
             <MetricCard label="ECL (12-month)" value={fmt(ecl.ecl12m)} sub={`Lifetime: ${fmt(ecl.eclLifetime)}`} color="blue" />
           </div>
@@ -401,17 +422,16 @@ export default function MonitoringPage() {
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
               <h2 className="text-sm font-bold text-[#003366] mb-1 flex items-center gap-2"><FileCheck className="w-4 h-4" /> Shadow Accounting Reconciliation</h2>
-              <p className="text-[10px] text-gray-500 mb-3">Three-way reconciliation: Loan Tape vs Shadow Ledger vs Bank Statement</p>
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="bg-blue-50 rounded-lg p-2.5"><p className="text-[10px] text-blue-500 mb-0.5">Loan Tape</p><p className="text-xs font-bold">Δ Principal: {fmt(shadow.loanTape.principalReduction)}</p><p className="text-[10px] text-gray-400">{shadow.loanTape.loanCount.toLocaleString()} loans</p></div>
+              <p className="text-[10px] text-gray-500 mb-3">Two-way reconciliation: Loan Tape vs Shadow Ledger</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-blue-50 rounded-lg p-2.5"><p className="text-[10px] text-blue-500 mb-0.5">Loan Tape</p><p className="text-xs font-bold">&Delta; Principal: {fmt(shadow.loanTape.principalReduction)}</p><p className="text-[10px] text-gray-400">{shadow.loanTape.loanCount.toLocaleString()} loans</p></div>
                 <div className="bg-purple-50 rounded-lg p-2.5"><p className="text-[10px] text-purple-500 mb-0.5">Shadow Ledger</p><p className="text-xs font-bold">Expected: {fmt(shadow.shadowLedger.expectedPrincipal)}</p><p className="text-[10px] text-gray-400">Interest: {fmt(shadow.shadowLedger.interestCalc)}</p></div>
-                <div className="bg-green-50 rounded-lg p-2.5"><p className="text-[10px] text-green-600 mb-0.5">Bank Statement</p><p className="text-xs font-bold">Collections: {fmt(shadow.bankStatement.cashCollections)}</p><p className="text-[10px] text-gray-400">Deposits: {fmt(shadow.bankStatement.deposits)}</p></div>
               </div>
               <div className={`rounded-lg p-3 border ${shadow.reconciliation.status === 'reconciled' ? 'bg-green-50 border-green-200' : shadow.reconciliation.status === 'minor_variance' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold">{shadow.reconciliation.status === 'reconciled' ? 'Reconciled' : shadow.reconciliation.status === 'minor_variance' ? 'Minor Variance' : 'Material Variance'}</p>
-                    <p className="text-[10px] text-gray-500">Cash Drag: {fmt(shadow.reconciliation.cashDrag)} ({shadow.reconciliation.cashDragPct}%)</p>
+                    <p className="text-[10px] text-gray-500">Variance: {fmt(shadow.reconciliation.variance)} ({shadow.reconciliation.variancePct}%)</p>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${shadow.reconciliation.status === 'reconciled' ? 'bg-green-100 text-green-700' : shadow.reconciliation.status === 'minor_variance' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{shadow.reconciliation.status.replace(/_/g, ' ')}</span>
                 </div>
@@ -433,6 +453,50 @@ export default function MonitoringPage() {
           </>)}
         </>) : <div className="text-center py-20 text-gray-400">No loan data available for this view. Upload a loan book to see analytics.</div>}
       </main>
+    </div>
+  );
+}
+
+function ComparisonChart({ overall, securityPackage }: { overall: LoanLevelRow[]; securityPackage: LoanLevelRow[] }) {
+  const calc = (rows: LoanLevelRow[]) => {
+    if (rows.length === 0) return { loans: 0, balance: 0, par30: 0, par90: 0, npl: 0, ecl: 0 };
+    const bal = rows.reduce((s, r) => s + r.currentBalance, 0);
+    const p30 = (rows.filter(r => r.dpdAsOfReportingDate > 30).length / rows.length) * 100;
+    const p90 = (rows.filter(r => r.dpdAsOfReportingDate > 90).length / rows.length) * 100;
+    const nplBal = rows.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
+    const npl = bal > 0 ? (nplBal / bal) * 100 : 0;
+    const eclObj = computeECL(rows);
+    return { loans: rows.length, balance: bal, par30: p30, par90: p90, npl, ecl: bal > 0 ? (eclObj.ecl12m / bal) * 100 : 0 };
+  };
+  const ov = calc(overall);
+  const sp = calc(securityPackage);
+  const metrics = [
+    { label: 'PAR 30+', overall: ov.par30, security: sp.par30, unit: '%' },
+    { label: 'PAR 90+', overall: ov.par90, security: sp.par90, unit: '%' },
+    { label: 'NPL Ratio', overall: ov.npl, security: sp.npl, unit: '%' },
+    { label: 'ECL / Bal', overall: ov.ecl, security: sp.ecl, unit: '%' },
+  ];
+  const data = metrics.map(m => ({ name: m.label, Overall: Number(m.overall.toFixed(1)), 'Security Pkg': Number(m.security.toFixed(1)) }));
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Lock className="w-4 h-4 text-[#003366]" />
+        <h2 className="text-sm font-bold text-[#003366]">Security Package vs Overall Portfolio</h2>
+      </div>
+      <p className="text-[10px] text-gray-500 mb-3">
+        Overall: {ov.loans.toLocaleString()} loans ({fmt(ov.balance)}) | Security package: {sp.loans.toLocaleString()} loans ({fmt(sp.balance)})
+      </p>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} layout="vertical" barGap={2}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `${v}%`} />
+          <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={80} />
+          <Tooltip formatter={(val: unknown) => [`${Number(val).toFixed(1)}%`]} />
+          <Legend wrapperStyle={{ fontSize: 10 }} />
+          <Bar dataKey="Overall" fill="#94a3b8" radius={[0, 3, 3, 0]} barSize={14} />
+          <Bar dataKey="Security Pkg" fill="#003366" radius={[0, 3, 3, 0]} barSize={14} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

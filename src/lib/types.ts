@@ -36,6 +36,8 @@ export interface NBFIRecord {
   monitoringData?: MonitoringData;
   setupCompleted?: boolean;
   loanBookMeta?: LoanBookUploadMeta;
+  transactionType?: TransactionType;
+  securitisationStructure?: SecuritisationStructure;
 }
 
 export interface CommentaryEntry {
@@ -291,6 +293,23 @@ export interface MonitoringData {
     jobsSupported: number;
   };
 }
+
+// ============================================================
+// Securitisation Types
+// ============================================================
+
+export type TransactionType = 'wholesale' | 'securitisation';
+
+export interface SecuritisationStructure {
+  seniorPct: number;
+  mezzaninePct: number;
+  equityPct: number;
+  overCollateralisationPct: number;
+  seniorCoupon: number;
+  mezzanineCoupon: number;
+  finalised: boolean;
+}
+
 
 // ============================================================
 // Auth / User Types

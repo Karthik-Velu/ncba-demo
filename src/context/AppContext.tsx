@@ -5,7 +5,7 @@ import {
   NBFIRecord, User, NBFIStatus, CommentaryEntry, FinancialData,
   LoanLevelRow, PoolSelectionState, CovenantDef, CovenantReading,
   DocumentRequirement, ProvisioningRule, EarlyWarningAlert,
-  MonitoringData, LoanBookUploadMeta,
+  MonitoringData, LoanBookUploadMeta, TransactionType, SecuritisationStructure,
 } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,6 +39,8 @@ interface AppState {
   saveCovenantSetup: (id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; lender: ProvisioningRule[] }) => void;
   updateDocumentStatus: (id: string, docId: string, status: 'submitted' | 'pending' | 'overdue', date?: string, uploadedBy?: string) => void;
   setLoanBookMeta: (id: string, meta: LoanBookUploadMeta) => void;
+  setTransactionType: (id: string, type: TransactionType) => void;
+  setSecuritisationStructure: (id: string, structure: SecuritisationStructure) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
@@ -262,12 +264,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ));
   }, []);
 
+  const setTransactionType = useCallback((id: string, type: TransactionType) => {
+    setNbfis(prev => prev.map(n => n.id === id ? { ...n, transactionType: type } : n));
+  }, []);
+
+  const setSecuritisationStructure = useCallback((id: string, structure: SecuritisationStructure) => {
+    setNbfis(prev => prev.map(n => n.id === id ? { ...n, securitisationStructure: structure, transactionType: 'securitisation' } : n));
+  }, []);
+
   return (
     <AppContext.Provider value={{
       user, nbfis, login, logout, addNBFI, deleteNBFI, updateNBFIStatus,
       loadFinancialData, updateFinancialValues,
       addCommentary, setRecommendation, setApproverComments, getNBFI,
-      loanBookData, setLoanBookData, selectedPoolByNbfi, setPoolSelection,
+      loanBookData, setLoanBookData, selectedPoolByNbfi, setPoolSelection, setTransactionType, setSecuritisationStructure,
       saveCovenantSetup, updateDocumentStatus, setLoanBookMeta,
     }}>
       {children}
