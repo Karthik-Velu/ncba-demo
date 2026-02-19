@@ -103,16 +103,16 @@ export default function EDAPage() {
 
   const quality = useMemo(() => {
     const totalBal = rows.reduce((s, r) => s + r.currentBalance, 0);
-    const par30 = rows.filter(r => r.dpdAsOfReportingDate > 30).length;
-    const par90 = rows.filter(r => r.dpdAsOfReportingDate > 90).length;
+    const par30Bal = rows.filter(r => r.dpdAsOfReportingDate > 30).reduce((s, r) => s + r.currentBalance, 0);
+    const par90Bal = rows.filter(r => r.dpdAsOfReportingDate > 90).reduce((s, r) => s + r.currentBalance, 0);
     const writeOff = rows.filter(r => r.loanWrittenOff).length;
     const avgRate = rows.length > 0 ? rows.reduce((s, r) => s + r.interestRate, 0) / rows.length : 0;
     const geos = new Set(rows.map(r => r.geography));
     const prods = new Set(rows.map(r => r.product));
     return {
       totalLoans: rows.length, totalBal, avgBal: rows.length > 0 ? totalBal / rows.length : 0,
-      avgRate, par30Pct: rows.length > 0 ? par30 / rows.length * 100 : 0,
-      par90Pct: rows.length > 0 ? par90 / rows.length * 100 : 0,
+      avgRate, par30Pct: totalBal > 0 ? par30Bal / totalBal * 100 : 0,
+      par90Pct: totalBal > 0 ? par90Bal / totalBal * 100 : 0,
       writeOffRate: rows.length > 0 ? writeOff / rows.length * 100 : 0,
       geoCount: geos.size, prodCount: prods.size,
     };
@@ -155,20 +155,20 @@ export default function EDAPage() {
   }, [rows]);
 
   const vintageData = useMemo(() => {
-    const map: Record<string, { count: number; disbursed: number; balance: number; dpd30: number; dpd90: number }> = {};
+    const map: Record<string, { count: number; disbursed: number; balance: number; dpd30Bal: number; dpd90Bal: number }> = {};
     rows.forEach(r => {
       const q = r.loanDisbursedDate.slice(0, 4) + '-Q' + (Math.ceil((parseInt(r.loanDisbursedDate.slice(5, 7)) || 1) / 3));
-      if (!map[q]) map[q] = { count: 0, disbursed: 0, balance: 0, dpd30: 0, dpd90: 0 };
+      if (!map[q]) map[q] = { count: 0, disbursed: 0, balance: 0, dpd30Bal: 0, dpd90Bal: 0 };
       map[q].count++;
       map[q].disbursed += r.loanDisbursedAmount;
       map[q].balance += r.currentBalance;
-      if (r.dpdAsOfReportingDate > 30) map[q].dpd30++;
-      if (r.dpdAsOfReportingDate > 90) map[q].dpd90++;
+      if (r.dpdAsOfReportingDate > 30) map[q].dpd30Bal += r.currentBalance;
+      if (r.dpdAsOfReportingDate > 90) map[q].dpd90Bal += r.currentBalance;
     });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([vintage, d]) => ({
       vintage, ...d,
-      dpd30Pct: d.count > 0 ? d.dpd30 / d.count * 100 : 0,
-      dpd90Pct: d.count > 0 ? d.dpd90 / d.count * 100 : 0,
+      dpd30Pct: d.balance > 0 ? d.dpd30Bal / d.balance * 100 : 0,
+      dpd90Pct: d.balance > 0 ? d.dpd90Bal / d.balance * 100 : 0,
       estLossRate: d.balance > 0 ? estimateLoss(rows.filter(r =>
         (r.loanDisbursedDate.slice(0, 4) + '-Q' + Math.ceil((parseInt(r.loanDisbursedDate.slice(5, 7)) || 1) / 3)) === vintage
       )).rate * 100 : 0,
@@ -199,19 +199,19 @@ export default function EDAPage() {
 
   const dimData = useMemo(() => {
     const compute = (keyFn: (r: LoanLevelRow) => string) => {
-      const map: Record<string, { count: number; balance: number; dpd30: number; dpd90: number }> = {};
+      const map: Record<string, { count: number; balance: number; dpd30Bal: number; dpd90Bal: number }> = {};
       rows.forEach(r => {
         const k = keyFn(r);
-        if (!map[k]) map[k] = { count: 0, balance: 0, dpd30: 0, dpd90: 0 };
+        if (!map[k]) map[k] = { count: 0, balance: 0, dpd30Bal: 0, dpd90Bal: 0 };
         map[k].count++;
         map[k].balance += r.currentBalance;
-        if (r.dpdAsOfReportingDate > 30) map[k].dpd30++;
-        if (r.dpdAsOfReportingDate > 90) map[k].dpd90++;
+        if (r.dpdAsOfReportingDate > 30) map[k].dpd30Bal += r.currentBalance;
+        if (r.dpdAsOfReportingDate > 90) map[k].dpd90Bal += r.currentBalance;
       });
       return Object.entries(map).map(([name, d]) => ({
         name, ...d,
-        par30: d.count > 0 ? d.dpd30 / d.count * 100 : 0,
-        par90: d.count > 0 ? d.dpd90 / d.count * 100 : 0,
+        par30: d.balance > 0 ? d.dpd30Bal / d.balance * 100 : 0,
+        par90: d.balance > 0 ? d.dpd90Bal / d.balance * 100 : 0,
         estLoss: estimateLoss(rows.filter(r => keyFn(r) === name)).rate * 100,
       })).sort((a, b) => b.estLoss - a.estLoss);
     };
