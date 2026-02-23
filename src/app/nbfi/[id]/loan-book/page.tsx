@@ -42,24 +42,36 @@ const REQUIRED_FIELDS = [
   'interestRate', 'loanWrittenOff', 'repossession', 'recoveryAfterWriteoff',
 ];
 
+const OPTIONAL_FIELDS = [
+  'geography', 'product', 'segment', 'borrowerName', 'residualTenureMonths',
+];
+
+const ALL_PLATFORM_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
+
 const DETECTED_COLUMNS = [
-  'Loan ID', 'Application ID', 'DPD as of Reporting Date', 'Current Balance',
-  'Loan Disbursed Amount', 'Total Overdue Amount', 'Loan Disbursed Date',
-  'Interest Rate', 'Loan Written Off', 'Repossession', 'Recovery after Writeoff',
+  'loan_id', 'application_id', 'dpd_as_of_reporting_date', 'current_balance',
+  'loan_disbursed_amount', 'total_overdue_amount', 'loan_disbursed_date',
+  'interest_rate', 'loan_written_off', 'repossession', 'recovery_after_writeoff',
+  'geography', 'product', 'segment', 'borrower_name', 'residual_tenure_months',
 ];
 
 const AUTO_MAPPING: Record<string, string> = {
-  'Loan ID': 'loanId',
-  'Application ID': 'applicationId',
-  'DPD as of Reporting Date': 'dpdAsOfReportingDate',
-  'Current Balance': 'currentBalance',
-  'Loan Disbursed Amount': 'loanDisbursedAmount',
-  'Total Overdue Amount': 'totalOverdueAmount',
-  'Loan Disbursed Date': 'loanDisbursedDate',
-  'Interest Rate': 'interestRate',
-  'Loan Written Off': 'loanWrittenOff',
-  'Repossession': 'repossession',
-  'Recovery after Writeoff': 'recoveryAfterWriteoff',
+  'loan_id': 'loanId',
+  'application_id': 'applicationId',
+  'dpd_as_of_reporting_date': 'dpdAsOfReportingDate',
+  'current_balance': 'currentBalance',
+  'loan_disbursed_amount': 'loanDisbursedAmount',
+  'total_overdue_amount': 'totalOverdueAmount',
+  'loan_disbursed_date': 'loanDisbursedDate',
+  'interest_rate': 'interestRate',
+  'loan_written_off': 'loanWrittenOff',
+  'repossession': 'repossession',
+  'recovery_after_writeoff': 'recoveryAfterWriteoff',
+  'geography': 'geography',
+  'product': 'product',
+  'segment': 'segment',
+  'borrower_name': 'borrowerName',
+  'residual_tenure_months': 'residualTenureMonths',
 };
 
 const FORMAT_TESTS = [
@@ -382,7 +394,7 @@ export default function LoanBookPage() {
                             <select value={columnMapping[col] || ''} onChange={e => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))}
                               className="w-full text-xs border border-gray-200 rounded px-2 py-1 bg-white">
                               <option value="">— unmapped —</option>
-                              {REQUIRED_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+                              {ALL_PLATFORM_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
                             </select>
                           </td>
                           <td className="px-3 py-2">
