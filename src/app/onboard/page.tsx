@@ -61,7 +61,7 @@ export default function OnboardPage() {
                 type="text"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. 4G Capital Kenya"
+                placeholder="e.g. ABC Finance Ltd"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 required
               />
