@@ -20,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 
-type DocTypeId = 'loan_book' | 'financial_statements' | 'monthly_mis';
+type DocTypeId = 'loan_book' | 'loan_performance_history' | 'financial_statements' | 'monthly_mis';
 
 export default function IntegrationPage() {
   const { user, getNBFI, loanBookData } = useApp();
@@ -79,7 +79,7 @@ function HealthOverview({ activeLoans }: { activeLoans: number }) {
   const avgSuccess = Math.round(cards.reduce((s, c) => s + c.successRate, 0) / cards.length);
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-5 gap-4 mb-6">
       {cards.map(c => (
         <div key={c.schema.id} className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -99,6 +99,20 @@ function HealthOverview({ activeLoans }: { activeLoans: number }) {
         </div>
       ))}
 
+      {/* Loan History card */}
+      <div className="bg-white rounded-xl border-2 border-blue-200 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Clock className="w-4 h-4 text-blue-600" />
+          <span className="text-xs font-semibold text-gray-700">Loan History</span>
+          <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Initial</span>
+        </div>
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between"><span className="text-gray-500">Coverage</span><span className="font-semibold text-blue-600">24 months</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Date range</span><span className="font-semibold">Jan 2022 – Dec 2023</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Last refresh</span><span className="font-semibold">Jan 15, 2024</span></div>
+        </div>
+      </div>
+
       <div className="bg-[#003366] rounded-xl p-4 text-white">
         <div className="flex items-center gap-2 mb-3">
           <Shield className="w-4 h-4 text-blue-300" />
@@ -106,7 +120,7 @@ function HealthOverview({ activeLoans }: { activeLoans: number }) {
         </div>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between"><span className="text-blue-200">Avg success</span><span className="font-semibold">{avgSuccess}%</span></div>
-          <div className="flex justify-between"><span className="text-blue-200">Active feeds</span><span className="font-semibold">3</span></div>
+          <div className="flex justify-between"><span className="text-blue-200">Active feeds</span><span className="font-semibold">4</span></div>
           <div className="flex justify-between"><span className="text-blue-200">Errors (7d)</span><span className={`font-semibold ${totalErrors > 0 ? 'text-red-300' : 'text-green-300'}`}>{totalErrors}</span></div>
         </div>
       </div>
@@ -116,18 +130,26 @@ function HealthOverview({ activeLoans }: { activeLoans: number }) {
 
 /* Document Type Tabs */
 
+const TAB_SUBTITLES: Record<string, string> = {
+  loan_book: 'Daily',
+  loan_performance_history: 'Initial',
+  financial_statements: 'Annual',
+  monthly_mis: 'Monthly',
+};
+
 function DocTypeTabs({ active, onChange }: { active: DocTypeId; onChange: (id: DocTypeId) => void }) {
   return (
-    <div className="flex border-b border-gray-200 mb-6">
+    <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
       {DOC_TYPE_SCHEMAS.map(s => {
         const isActive = active === s.id;
+        const sub = TAB_SUBTITLES[s.id];
         return (
           <button key={s.id} onClick={() => onChange(s.id as DocTypeId)}
-            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
               isActive ? 'border-[#003366] text-[#003366]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}>
             {s.shortName}
-            <span className="ml-2 text-[10px] font-normal text-gray-400">{s.fields.length} fields</span>
+            {sub && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-normal ${s.id === 'loan_performance_history' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>{sub}</span>}
           </button>
         );
       })}
@@ -139,6 +161,7 @@ function DocTypeTabs({ active, onChange }: { active: DocTypeId; onChange: (id: D
 
 function DocTypeContent({ docTypeId }: { docTypeId: DocTypeId }) {
   const schema = getSchema(docTypeId);
+  const isHistory = docTypeId === 'loan_performance_history';
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ config: true, mapping: false, testing: false, audit: false, errors: false });
   const toggle = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -146,14 +169,36 @@ function DocTypeContent({ docTypeId }: { docTypeId: DocTypeId }) {
     <div className="space-y-4">
       <div className="mb-4">
         <p className="text-sm text-gray-600">{schema.description}</p>
+        {schema.note && (
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-2">
+            <Eye className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-700">{schema.note}</p>
+          </div>
+        )}
+        {isHistory && (
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {[
+              { label: 'Coverage', value: '24 months', sub: 'Jan 2022 – Dec 2023' },
+              { label: 'Loan-Months', value: '12,480', sub: '520 loans × 24 periods' },
+              { label: 'Format', value: 'Long', sub: 'Auto-detected' },
+              { label: 'Last Refresh', value: 'Jan 15, 2024', sub: 'Initial upload' },
+            ].map(m => (
+              <div key={m.label} className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-center">
+                <p className="text-sm font-bold text-blue-700">{m.value}</p>
+                <p className="text-xs text-blue-600">{m.label}</p>
+                <p className="text-[10px] text-blue-400">{m.sub}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <CollapsibleSection title="Upload Configuration" icon={<Wifi className="w-4 h-4" />} open={openSections.config} onToggle={() => toggle('config')}>
         <UploadConfigSection schema={schema} />
       </CollapsibleSection>
-      <CollapsibleSection title={`Column / Field Mapping (${schema.fields.length} fields)`} icon={<Database className="w-4 h-4" />} open={openSections.mapping} onToggle={() => toggle('mapping')}>
+      <CollapsibleSection title={isHistory ? `Column / Field Mapping — Long Format (${schema.fields.length} fields) | Wide Format (see format guide)` : `Column / Field Mapping (${schema.fields.length} fields)`} icon={<Database className="w-4 h-4" />} open={openSections.mapping} onToggle={() => toggle('mapping')}>
         <ColumnMappingSection schema={schema} />
       </CollapsibleSection>
-      <CollapsibleSection title="Sample File Testing" icon={<Shield className="w-4 h-4" />} open={openSections.testing} onToggle={() => toggle('testing')}>
+      <CollapsibleSection title={isHistory ? "Sample File Testing (14 history-specific checks)" : "Sample File Testing"} icon={<Shield className="w-4 h-4" />} open={openSections.testing} onToggle={() => toggle('testing')}>
         <SampleTestingSection docTypeId={docTypeId} schema={schema} />
       </CollapsibleSection>
       <CollapsibleSection title="Upload Audit Trail" icon={<Clock className="w-4 h-4" />} open={openSections.audit} onToggle={() => toggle('audit')}>

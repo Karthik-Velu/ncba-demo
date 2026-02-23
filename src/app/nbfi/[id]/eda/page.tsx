@@ -4,7 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
-import { ArrowLeft, BarChart3, Shield, TrendingUp, AlertTriangle, CheckCircle2, Filter, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Info, BarChart3, Shield, TrendingUp, AlertTriangle, CheckCircle2, Filter, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import type { LoanLevelRow } from '@/lib/types';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
@@ -84,6 +84,7 @@ export default function EDAPage() {
 
   useEffect(() => { if (!user) router.push('/'); }, [user, router]);
   const nbfi = getNBFI(id);
+  const loanBookMeta = nbfi?.loanBookMeta;
   useEffect(() => { if (user && id && !nbfi) router.replace('/dashboard'); }, [user, id, nbfi, router]);
 
   const geoOptions = useMemo(() => [...new Set(allRows.map(r => r.geography || 'Unknown'))].sort(), [allRows]);
@@ -242,6 +243,43 @@ export default function EDAPage() {
             <Link href={`/nbfi/${id}/selection`} className="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm font-medium hover:bg-[#004d99]">Asset Selection &rarr;</Link>
           </div>
         </div>
+
+        {/* Data Coverage Banner */}
+        {loanBookMeta?.source === 'initial_history' ? (
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-blue-800">Historical Data Coverage</span>
+                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Actual historical data</span>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mb-2">
+                  {[
+                    { label: 'Reporting Periods', value: loanBookMeta?.periodCount ? `${loanBookMeta.periodCount} months` : '24 months' },
+                    { label: 'Date Range', value: loanBookMeta?.dateRangeStart && loanBookMeta?.dateRangeEnd ? `${loanBookMeta.dateRangeStart} – ${loanBookMeta.dateRangeEnd}` : 'Jan 2022 – Dec 2023' },
+                    { label: 'Loan-Months', value: loanBookMeta?.rowCount?.toLocaleString() ?? '12,480' },
+                    { label: 'Source', value: loanBookMeta?.filename ?? 'Initial Upload' },
+                  ].map(m => (
+                    <div key={m.label} className="bg-white rounded-lg p-2 border border-blue-100 text-center">
+                      <p className="text-sm font-bold text-blue-700">{m.value}</p>
+                      <p className="text-xs text-blue-500">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-blue-600">Vintage curves, roll-rate migration matrices, and ECL calculations below are based on actual historical loan performance data from this upload.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+            <Info className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-amber-800 mb-0.5">Single snapshot — estimated analytics</p>
+              <p className="text-xs text-amber-700">Only a single loan tape snapshot is available. Vintage curves and roll-rate matrices below are estimated from DPD distribution — upload 12–36 months of historical performance data for accurate analytics.</p>
+            </div>
+          </div>
+        )}
 
         {/* Filter Bar */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">

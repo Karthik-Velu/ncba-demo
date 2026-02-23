@@ -52,9 +52,9 @@ export default function NBFIPortalPage() {
                 <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center mb-4 group-hover:bg-emerald-100 transition-colors">
                   <Upload className="w-6 h-6 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">Upload Loan Book</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Upload Loan Data</h3>
                 <p className="text-sm text-gray-500">
-                  Upload your latest loan-level data for portfolio analysis
+                  Upload loan performance history (initial) or daily loan tape (ongoing)
                 </p>
               </div>
             </Link>
@@ -112,9 +112,33 @@ export default function NBFIPortalPage() {
                   <BookOpen className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Loan Book Summary</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900">Loan Book Summary</h3>
+                    {meta.source === 'initial_history' && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">History uploaded</span>
+                    )}
+                    {meta.source === 'nbfi_portal' && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Daily tape uploaded</span>
+                    )}
+                  </div>
+                  {meta.source === 'initial_history' && meta.periodCount && (
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      <div className="bg-blue-50 rounded p-2 text-center">
+                        <p className="text-sm font-bold text-blue-700">{meta.periodCount} months</p>
+                        <p className="text-xs text-blue-500">History coverage</p>
+                      </div>
+                      <div className="bg-blue-50 rounded p-2 text-center">
+                        <p className="text-sm font-bold text-blue-700">{meta.dateRangeStart ?? '—'} – {meta.dateRangeEnd ?? '—'}</p>
+                        <p className="text-xs text-blue-500">Date range</p>
+                      </div>
+                      <div className="bg-blue-50 rounded p-2 text-center">
+                        <p className="text-sm font-bold text-blue-700">{(meta.rowCount).toLocaleString()}</p>
+                        <p className="text-xs text-blue-500">Loan-months</p>
+                      </div>
+                    </div>
+                  )}
                   <p className="text-sm text-gray-500 mt-1">
-                    <span className="font-medium text-gray-700">{meta.rowCount.toLocaleString()}</span> loans uploaded
+                    <span className="font-medium text-gray-700">{meta.rowCount.toLocaleString()}</span> rows uploaded
                     {meta.uploadedAt && (
                       <>
                         {' '}on{' '}

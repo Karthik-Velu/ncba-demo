@@ -9,7 +9,9 @@ import {
   ArrowLeft, Upload, Server, Building2, Globe,
   ChevronDown, ChevronRight, CheckCircle2, Loader2,
   FileSpreadsheet, Database, Clock, User, Mail, Send,
+  Info, AlertTriangle, BookOpen,
 } from 'lucide-react';
+import { DOC_TYPE_SCHEMAS, getValidationTests } from '@/lib/integrationSchemas';
 import Link from 'next/link';
 
 const SFTP_STAGES = [
@@ -85,6 +87,18 @@ const FORMAT_TESTS = [
   { name: 'No null values in required fields', pass: false, detail: '2 rows with null Current Balance — auto-filled with 0' },
 ];
 
+const HISTORY_UPLOAD_STAGES = [
+  'Reading file...',
+  'Detecting format (long / wide)...',
+  'Validating required columns...',
+  'Parsing reporting periods...',
+  'Checking period contiguity (no gaps)...',
+  'Validating monotonicity of write-off flags...',
+  'Computing DPD bucket distributions per period...',
+  'Flagging data quality issues...',
+  'Complete!',
+];
+
 type Channel = 'sftp' | 'lender' | 'nbfi' | null;
 
 export default function LoanBookPage() {
@@ -111,6 +125,13 @@ export default function LoanBookPage() {
   const [showFormatTests, setShowFormatTests] = useState(false);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({ ...AUTO_MAPPING });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Phase 1: Initial Historical Upload state
+  const [histPhaseOpen, setHistPhaseOpen] = useState(true);
+  const [histFormat, setHistFormat] = useState<'auto' | 'long' | 'wide'>('auto');
+  const [histUploading, setHistUploading] = useState(false);
+  const [histStage, setHistStage] = useState(-1);
+  const [histDone, setHistDone] = useState(false);
 
   // NBFI invite state
   const [inviteName, setInviteName] = useState('');
@@ -232,6 +253,34 @@ export default function LoanBookPage() {
     [runUploadSimulation],
   );
 
+  const runHistoryUpload = useCallback(async () => {
+    setHistUploading(true);
+    setHistStage(0);
+    setHistDone(false);
+    for (let i = 0; i < HISTORY_UPLOAD_STAGES.length; i++) {
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+      setHistStage(i);
+    }
+    // Load data and tag as initial_history
+    setLoanBookData(id, MOCK_LOAN_BOOK);
+    setLoanBookMeta(id, {
+      source: 'initial_history',
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user?.name ?? 'System',
+      rowCount: MOCK_LOAN_BOOK.length * 24,
+      totalBalance: MOCK_LOAN_BOOK.reduce((s, r) => s + (r.currentBalance ?? 0), 0),
+      filename: 'loan_history_2022_2023.csv',
+      historyMonths: 24,
+      periodCount: 24,
+      dateRangeStart: '2022-01',
+      dateRangeEnd: '2023-12',
+      inputFormat: histFormat === 'auto' ? 'long' : histFormat,
+    });
+    setHistUploading(false);
+    setHistDone(true);
+    setHistPhaseOpen(false);
+  }, [id, histFormat, setLoanBookData, setLoanBookMeta, user]);
+
   const toggle = (ch: Channel) => setExpanded(prev => (prev === ch ? null : ch));
 
   if (!user || !nbfi) return null;
@@ -249,15 +298,170 @@ export default function LoanBookPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
 
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-800">
-            Step 2 — Loan Book Upload
-          </h1>
+        <div className="mb-4">
+          <h1 className="text-xl font-bold text-gray-800">Step 2 — Loan Book Upload</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Upload individual loan-level data for{' '}
-            <span className="font-medium text-gray-700">{nbfi.name}</span> to
-            assess portfolio quality and select the security package.
+            Upload loan data for <span className="font-medium text-gray-700">{nbfi.name}</span>.
+            Complete both phases before running EDA and asset selection.
           </p>
+        </div>
+
+        {/* Phase stepper */}
+        <div className="mb-6 flex items-stretch">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-l-lg bg-[#003366] text-white text-sm font-medium">
+            <span className="w-5 h-5 rounded-full bg-white text-[#003366] flex items-center justify-center text-xs font-bold shrink-0">1</span>
+            Loan Performance History
+            <span className="text-blue-300 font-normal text-xs ml-1">(initial · one-time)</span>
+            {histDone && <span className="ml-2 text-xs bg-green-400/20 text-green-200 px-1.5 rounded">✓ Done</span>}
+          </div>
+          <div className="w-0 h-0 self-center border-t-[20px] border-b-[20px] border-l-[12px] border-transparent border-l-[#003366]" />
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-r-lg bg-gray-100 text-gray-600 text-sm font-medium">
+            <span className="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-bold shrink-0">2</span>
+            Ongoing Daily Loan Tape
+            <span className="text-gray-400 font-normal text-xs ml-1">(daily via SFTP / manual)</span>
+          </div>
+        </div>
+
+        {/* Phase 1: Initial Historical Upload */}
+        <div className="max-w-3xl mb-6">
+          <div className="border-2 border-blue-200 rounded-xl bg-white overflow-hidden">
+            <button type="button" onClick={() => setHistPhaseOpen(o => !o)} className="w-full flex items-center gap-3 p-5 text-left">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-gray-800">Phase 1 — Loan Performance History</h3>
+                  {histDone
+                    ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">✓ Uploaded — 24 months</span>
+                    : <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Required for EDA</span>}
+                </div>
+                <p className="text-sm text-gray-500">12–36 months of monthly snapshots. Powers vintage, roll-rate, and ECL calibration.</p>
+              </div>
+              {histPhaseOpen ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />}
+            </button>
+
+            {histPhaseOpen && (
+              <div className="px-5 pb-5 border-t border-blue-100 pt-4 space-y-4">
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-700">
+                    <span className="font-semibold">Why is this needed? </span>
+                    The daily loan tape captures a single snapshot (DPD as of today). Vintage analysis, roll-rate matrices, and IFRS 9 ECL calculations require month-by-month DPD progression across 12–36 reporting periods to build accurate loss curves and migration probabilities.
+                  </p>
+                </div>
+
+                {!histDone && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">File format</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: 'auto' as const, label: 'Auto-detect', sub: 'Detected from column headers' },
+                        { id: 'long' as const, label: 'Long format', sub: 'One row per loan per period' },
+                        { id: 'wide' as const, label: 'Wide format', sub: 'dpd_YYYY_MM / bal_YYYY_MM columns' },
+                      ]).map(f => (
+                        <label key={f.id} className={"flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-colors " + (histFormat === f.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')}>
+                          <input type="radio" name="histFormat" value={f.id} checked={histFormat === f.id} onChange={() => setHistFormat(f.id)} className="mt-0.5" />
+                          <div><p className="text-xs font-semibold text-gray-700">{f.label}</p><p className="text-xs text-gray-500">{f.sub}</p></div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!histDone && histFormat !== 'wide' && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Long format sample — required columns highlighted</p>
+                    <div className="overflow-x-auto rounded border border-gray-200">
+                      <table className="text-xs w-full">
+                        <thead className="bg-blue-50">
+                          <tr>{['Loan ID','Reporting Date','DPD','Balance','Overdue','Written Off','Recovery','Disbursed','Disb. Date','Rate'].map(h => <th key={h} className="px-2 py-1 text-left font-medium text-blue-700">{h}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t">{['LN1001','2022-01-31','0','105000','0','FALSE','0','110555','2021-06-15','16.49'].map((v,i) => <td key={i} className="px-2 py-1 text-gray-700">{v}</td>)}</tr>
+                          <tr className="border-t bg-gray-50">{['LN1001','2022-02-28','0','103000','0','FALSE','0','110555','2021-06-15','16.49'].map((v,i) => <td key={i} className="px-2 py-1 text-gray-700">{v}</td>)}</tr>
+                          <tr className="border-t">{['LN1001','2022-03-31','15','101200','1500','FALSE','0','110555','2021-06-15','16.49'].map((v,i) => <td key={i} className="px-2 py-1 text-gray-700">{v}</td>)}</tr>
+                          <tr className="border-t text-gray-400"><td className="px-2 py-1" colSpan={10}>... (one row per loan per month, 12–36 periods) ...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {!histDone && histFormat === 'wide' && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Wide format sample — columns dpd_YYYY_MM and bal_YYYY_MM per period</p>
+                    <div className="overflow-x-auto rounded border border-gray-200">
+                      <table className="text-xs w-full">
+                        <thead className="bg-purple-50">
+                          <tr>{['Loan ID','Disbursed Date','Disbursed Amt','Rate','dpd_2022_01','bal_2022_01','dpd_2022_02','bal_2022_02','...'].map(h => <th key={h} className="px-2 py-1 text-left font-medium text-purple-700">{h}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t">{['LN1001','2021-06-15','110555','16.49','0','105000','0','103000','...'].map((v,i) => <td key={i} className="px-2 py-1 text-gray-700">{v}</td>)}</tr>
+                          <tr className="border-t bg-gray-50">{['LN1002','2021-08-10','75000','14.0','0','72000','0','70500','...'].map((v,i) => <td key={i} className="px-2 py-1 text-gray-700">{v}</td>)}</tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {!histDone && !histUploading && (
+                  <div
+                    className="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center bg-blue-50/30 hover:bg-blue-50 transition-colors"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => { e.preventDefault(); runHistoryUpload(); }}
+                  >
+                    <Upload className="w-8 h-8 text-blue-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-700 mb-1">Drop your loan history file here</p>
+                    <p className="text-xs text-gray-400 mb-3">CSV or XLSX · Long or Wide format · Max 200 MB</p>
+                    <label className="cursor-pointer inline-flex items-center gap-2 bg-[#003366] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#004d99]">
+                      <Upload className="w-4 h-4" /> Browse file
+                      <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={() => runHistoryUpload()} />
+                    </label>
+                  </div>
+                )}
+
+                {histUploading && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                      <div className="bg-blue-500 h-2 rounded-full transition-all duration-500" style={{ width: ((histStage + 1) / HISTORY_UPLOAD_STAGES.length * 100) + '%' }} />
+                    </div>
+                    <ul className="space-y-1">
+                      {HISTORY_UPLOAD_STAGES.map((s, i) => (
+                        <li key={i} className={"flex items-center gap-2 text-xs " + (i < histStage ? 'text-green-600' : i === histStage ? 'text-blue-600 font-medium' : 'text-gray-400')}>
+                          {i < histStage ? <CheckCircle2 className="w-3.5 h-3.5" /> : i === histStage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <div className="w-3.5 h-3.5 rounded-full border border-gray-300" />}
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {histDone && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                      <p className="text-sm font-semibold text-green-700">Loan Performance History uploaded successfully</p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      {[
+                        { label: 'Reporting Periods', value: '24 months' },
+                        { label: 'Date Range', value: 'Jan 2022 – Dec 2023' },
+                        { label: 'Loan-Months', value: (MOCK_LOAN_BOOK.length * 24).toLocaleString() },
+                        { label: 'Format', value: histFormat === 'auto' ? 'Long (auto-detected)' : histFormat === 'wide' ? 'Wide' : 'Long' },
+                      ].map(m => (
+                        <div key={m.label} className="bg-white rounded p-2 text-center border border-green-100">
+                          <p className="text-sm font-bold text-green-700">{m.value}</p>
+                          <p className="text-xs text-green-600">{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500">Vintage curves, roll-rate matrices, and ECL calculations now use actual historical data. Proceed to EDA to view analysis.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Summary banner when data is loaded ── */}
@@ -288,9 +492,10 @@ export default function LoanBookPage() {
           </div>
         )}
 
-        <p className="text-sm text-gray-600 mb-4">
-          Choose how to load the loan book:
-        </p>
+        <div className="mb-3">
+          <h2 className="text-base font-semibold text-gray-700">Phase 2 — Ongoing Daily Loan Tape</h2>
+          <p className="text-sm text-gray-500">Configure how the daily full-dump loan tape is delivered. These uploads power real-time monitoring and covenant tracking. File naming: <code className="text-xs bg-gray-100 px-1 rounded">loanbook_YYYYMMDD.csv</code></p>
+        </div>
 
         <div className="max-w-3xl space-y-4">
           {/* ─────────────────── 1. SFTP Simulation ─────────────────── */}

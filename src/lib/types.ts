@@ -203,13 +203,53 @@ export interface PoolSelectionState {
   confirmedAt?: string;
 }
 
+// One row per loan per reporting period — the "long" historical format
+export interface HistoricalLoanRow {
+  loanId: string;
+  reportingDate: string;          // "YYYY-MM-DD" (end-of-month snapshot)
+  dpd: number;
+  currentBalance: number;
+  disbursedAmount: number;
+  overdueAmount: number;
+  writtenOff: boolean;
+  repossession: boolean;
+  recoveryAmount: number;
+  interestRate?: number;
+  geography?: string;
+  product?: string;
+  segment?: string;
+  borrowerName?: string;
+  disbursedDate?: string;
+  residualTenureMonths?: number;
+}
+
+// Wide format: one row per loan, period DPD/balance as dynamic columns (dpd_YYYY_MM, bal_YYYY_MM)
+export interface WideFormatLoanRow {
+  loanId: string;
+  disbursedDate: string;
+  disbursedAmount: number;
+  interestRate?: number;
+  geography?: string;
+  product?: string;
+  segment?: string;
+  borrowerName?: string;
+  // dynamic period columns — e.g. dpd_2023_01, bal_2023_01, dpd_2023_02, bal_2023_02, ...
+  [key: string]: string | number | boolean | undefined;
+}
+
 export interface LoanBookUploadMeta {
-  source: 'sftp' | 'lender_upload' | 'nbfi_portal';
+  source: 'sftp' | 'lender_upload' | 'nbfi_portal' | 'initial_history';
   uploadedAt: string;
   uploadedBy: string;
   rowCount: number;
   totalBalance: number;
   filename?: string;
+  // Historical upload metadata
+  historyMonths?: number;       // e.g. 24
+  periodCount?: number;         // distinct reporting dates in the history file
+  dateRangeStart?: string;      // "YYYY-MM" earliest period
+  dateRangeEnd?: string;        // "YYYY-MM" most recent period
+  inputFormat?: 'long' | 'wide' | 'snapshot';
 }
 
 // ============================================================
