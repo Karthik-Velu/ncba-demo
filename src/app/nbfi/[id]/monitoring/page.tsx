@@ -293,7 +293,7 @@ export default function MonitoringPage() {
             <MetricCard label="Total Overdue" value={fmt(financials.totalOverdue)} sub={`${pct(financials.overdueRatio)} of balance`} color="amber" />
             <MetricCard label="Write-off Rate" value={pct(financials.writeOffRate)} sub={`${financials.writeOffCount} of ${effectiveRows.length}`} color="red" />
             <MetricCard label="Recovery Rate" value={pct(financials.recoveryRate)} sub={fmt(financials.recovery)} color="green" />
-            <MetricCard label="ECL (12-month)" value={fmt(ecl.ecl12m)} sub={`Lifetime: ${fmt(ecl.eclLifetime)}`} color="blue" />
+            <MetricCard label="ECL (12-month, IFRS 9)" value={fmt(ecl.ecl12m)} sub={`Lifetime: ${fmt(ecl.eclLifetime)}`} color="blue" />
           </div>
           <div className="grid grid-cols-2 gap-5 mb-5">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">

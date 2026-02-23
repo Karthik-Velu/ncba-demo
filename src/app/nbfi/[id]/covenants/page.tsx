@@ -316,7 +316,7 @@ export default function CovenantsPage() {
         <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
           <Eye className="w-4 h-4 text-blue-500" />
           <p className="text-xs text-blue-700">
-            This is a <strong>monitoring view</strong>. To edit covenant definitions, provisioning rules, or security settings, go to{' '}
+            This is a <strong>monitoring view</strong>. To edit covenant definitions or provisioning rules, go to{' '}
             <Link href={`/nbfi/${id}/setup`} className="underline font-medium">Step 3: Covenant &amp; Doc Setup</Link>.
           </p>
         </div>

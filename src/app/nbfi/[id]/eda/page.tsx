@@ -280,7 +280,7 @@ export default function EDAPage() {
           <div className={`rounded-xl border p-6 ${loss.rate > 0.05 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
             <h2 className="text-sm font-bold text-[#003366] flex items-center gap-2 mb-4">
               {loss.rate > 0.05 ? <AlertTriangle className="w-4 h-4 text-red-500" /> : <CheckCircle2 className="w-4 h-4 text-green-500" />}
-              Estimated Loss Summary (ECL)
+              Estimated Loss Summary (IFRS 9 ECL)
             </h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -292,7 +292,7 @@ export default function EDAPage() {
                 <p className={`text-2xl font-bold ${loss.rate > 0.05 ? 'text-red-700' : 'text-green-700'}`}>{(loss.rate * 100).toFixed(2)}%</p>
               </div>
               <div className="col-span-2">
-                <p className="text-[10px] text-gray-400">Roll rate methodology: Default Roll Rate (DRR) and Gross Loss Rate by DPD band; transition matrix and segmentation (product, geography, segment, ticket size).</p>
+                <p className="text-[10px] text-gray-400">IFRS 9 simplified loss-rate approach: DPD-based staging (Stage 1: 0–30 DPD → 12-month ECL; Stage 2/3: 30+ DPD → lifetime ECL per SICR rebuttable presumption). Roll rate methodology with transition matrix and segmentation (product, geography, segment, ticket size).</p>
               </div>
             </div>
           </div>

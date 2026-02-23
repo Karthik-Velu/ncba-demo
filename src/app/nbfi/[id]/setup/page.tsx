@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { CovenantDef, DocumentRequirement, ProvisioningRule } from '@/lib/types';
-import { Plus, Trash2, CheckCircle2, Settings, FileText, Shield, Lock } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Settings, FileText, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -42,14 +42,6 @@ const DEFAULT_LENDER_PROVISIONING: ProvisioningRule[] = [
   { bucket: 'loss', dpdMin: 121, dpdMax: 9999, provisionPercent: 100 },
 ];
 
-const SECURITY_TYPES = [
-  { type: 'Loan Book Assignment', description: 'Assignment of receivables from the underlying retail loan portfolio', coverage: '120%', status: 'active' },
-  { type: 'Corporate Guarantee', description: 'Personal guarantee from directors / parent company', coverage: 'Unlimited', status: 'active' },
-  { type: 'Cash Collateral (DSRA)', description: 'Debt Service Reserve Account — 3 months interest cover', coverage: '25%', status: 'active' },
-  { type: 'Floating Charge', description: 'Floating charge over all assets of the NBFI', coverage: '100%', status: 'pending' },
-  { type: 'Fixed Deposit Lien', description: 'Lien on fixed deposits held with lender', coverage: '15%', status: 'pending' },
-];
-
 const BUCKET_LABELS: Record<string, string> = {
   normal: 'Normal', watch: 'Watch', substandard: 'Substandard', doubtful: 'Doubtful', loss: 'Loss',
 };
@@ -60,7 +52,7 @@ export default function SetupPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [activeTab, setActiveTab] = useState<'covenants' | 'documents' | 'provisioning' | 'security'>('covenants');
+  const [activeTab, setActiveTab] = useState<'covenants' | 'documents' | 'provisioning'>('covenants');
   const [covenants, setCovenants] = useState<CovenantDef[]>([]);
   const [documents, setDocuments] = useState<DocumentRequirement[]>([]);
   const [nbfiRules, setNbfiRules] = useState<ProvisioningRule[]>([]);
@@ -120,7 +112,6 @@ export default function SetupPage() {
     { key: 'covenants' as const, label: 'Covenant Configuration', icon: Shield },
     { key: 'documents' as const, label: 'Document Requirements', icon: FileText },
     { key: 'provisioning' as const, label: 'Provisioning Rules', icon: Settings },
-    { key: 'security' as const, label: 'Security & Collateral', icon: Lock },
   ];
 
   return (
@@ -301,7 +292,7 @@ export default function SetupPage() {
         {activeTab === 'provisioning' && (
           <div className="space-y-6">
             <p className="text-sm text-gray-600">
-              Provision matrix by DPD band; aligns with Stage 2/3 lifetime ECL for defaulted/watch buckets. Normal = Stage 1 (12m); Watch, Substandard, Doubtful, Loss = Stage 2/3 (lifetime).
+              IFRS 9 three-stage ECL framework: Stage 1 (Normal, 0–30 DPD) = 12-month ECL; Stage 2 (Watch/Substandard, 31–90 DPD, significant increase in credit risk) = lifetime ECL; Stage 3 (Doubtful/Loss, 90+ DPD, credit-impaired) = lifetime ECL. DPD-based staging uses the 30-day past-due rebuttable presumption per IFRS 9.5.5.11. Provision rates below represent a simplified, loss-rate approximation of ECL.
             </p>
             <div className="grid grid-cols-2 gap-6">
               {[
@@ -362,65 +353,7 @@ export default function SetupPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
                 <strong>Note:</strong> Lender provisioning rates account for the security package (loan book assignment, guarantees, DSRA).
-                With adequate collateral coverage, provisioning rates may be adjusted downward. See the <strong>Security &amp; Collateral</strong> tab for details.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'security' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-sm font-bold text-[#003366] mb-4 flex items-center gap-2">
-                <Lock className="w-4 h-4" /> Security Package
-              </h2>
-              <p className="text-xs text-gray-500 mb-4">
-                Define the collateral and security structure for this transaction. Security coverage impacts Lender provisioning requirements.
-              </p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-2.5 font-medium text-gray-600">Security Type</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-gray-600">Description</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-28">Coverage</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-28">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SECURITY_TYPES.map(sec => (
-                    <tr key={sec.type} className="border-b border-gray-100">
-                      <td className="px-4 py-3 font-medium text-gray-800">{sec.type}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{sec.description}</td>
-                      <td className="px-4 py-3 font-mono text-sm">{sec.coverage}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
-                          sec.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        }`}>{sec.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-sm font-bold text-[#003366] mb-4">Security Impact on Provisioning</h2>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-green-50 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-green-700">160%</p>
-                  <p className="text-xs text-gray-600 mt-1">Total Security Coverage</p>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-[#003366]">3</p>
-                  <p className="text-xs text-gray-600 mt-1">Active Security Layers</p>
-                </div>
-                <div className="p-4 bg-amber-50 rounded-lg text-center">
-                  <p className="text-2xl font-bold text-amber-700">2</p>
-                  <p className="text-xs text-gray-600 mt-1">Pending Documentation</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">
-                With 160% total security coverage, Lender provisioning rates reflect the reduced loss-given-default.
-                Once all security documentation is perfected, provisioning rates may be further optimized.
+                With adequate collateral coverage, provisioning rates may be adjusted downward.
               </p>
             </div>
           </div>

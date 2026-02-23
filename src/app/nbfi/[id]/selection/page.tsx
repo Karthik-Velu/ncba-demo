@@ -50,7 +50,6 @@ export default function SelectionPage() {
   const [selectedGeos, setSelectedGeos] = useState<string[]>(selection?.filterSnapshot?.geographies ?? []);
   const [selectedProducts, setSelectedProducts] = useState<string[]>(selection?.filterSnapshot?.products ?? []);
   const [selectedDpdBuckets, setSelectedDpdBuckets] = useState<string[]>(selection?.filterSnapshot?.dpdBuckets ?? []);
-  const [excludedSegments, setExcludedSegments] = useState<string[]>(selection?.excludedSegments ?? []);
   const [confirmed, setConfirmed] = useState(!!selection?.confirmedAt);
   const [wantSecuritise, setWantSecuritise] = useState(nbfiInit?.transactionType === 'securitisation');
   const [seniorPct, setSeniorPct] = useState(nbfiInit?.securitisationStructure?.seniorPct ?? 70);
@@ -71,18 +70,13 @@ export default function SelectionPage() {
 
   const geoOptions = useMemo(() => [...new Set(rows.map(r => r.geography || 'Unknown'))].sort(), [rows]);
   const prodOptions = useMemo(() => [...new Set(rows.map(r => r.product || 'Unknown'))].sort(), [rows]);
-  const segOptions = useMemo(() => [...new Set(rows.map(r => r.segment || r.product || 'Other'))].sort(), [rows]);
 
-  const toggleExclusion = (seg: string) => {
-    setExcludedSegments(prev => prev.includes(seg) ? prev.filter(s => s !== seg) : [...prev, seg]);
-  };
   const toggleGeo = (g: string) => setSelectedGeos(p => p.includes(g) ? p.filter(x => x !== g) : [...p, g]);
   const toggleProduct = (p: string) => setSelectedProducts(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
   const toggleDpd = (b: string) => setSelectedDpdBuckets(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
 
   const filtered = useMemo(() => {
     return rows.filter(r => {
-      if (excludedSegments.includes(r.segment || r.product || 'Other')) return false;
       if (r.loanDisbursedAmount < loanAmountMin || r.loanDisbursedAmount > loanAmountMax) return false;
       if (r.residualTenureMonths != null && (r.residualTenureMonths < tenureMin || r.residualTenureMonths > tenureMax)) return false;
       if (r.interestRate < rateMin || r.interestRate > rateMax) return false;
@@ -91,7 +85,7 @@ export default function SelectionPage() {
       if (selectedDpdBuckets.length > 0 && !selectedDpdBuckets.includes(getDpdBucket(r.dpdAsOfReportingDate))) return false;
       return true;
     });
-  }, [rows, excludedSegments, loanAmountMin, loanAmountMax, tenureMin, tenureMax, rateMin, rateMax, selectedGeos, selectedProducts, selectedDpdBuckets]);
+  }, [rows, loanAmountMin, loanAmountMax, tenureMin, tenureMax, rateMin, rateMax, selectedGeos, selectedProducts, selectedDpdBuckets]);
 
   const totalBalance = useMemo(() => filtered.reduce((s, r) => s + r.currentBalance, 0), [filtered]);
   const excludedCount = rows.length - filtered.length;
@@ -122,7 +116,7 @@ export default function SelectionPage() {
 
   const handleConfirm = () => {
     const state: PoolSelectionState = {
-      excludedSegments: [...excludedSegments],
+      excludedSegments: [],
       filterSnapshot: {
         loanAmountMin, loanAmountMax, tenureMin, tenureMax, rateMin, rateMax,
         dpdBuckets: selectedDpdBuckets.length > 0 ? [...selectedDpdBuckets] : undefined,
@@ -229,22 +223,6 @@ export default function SelectionPage() {
               </div>
             </section>
 
-            {/* Segment Exclusion */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-sm font-bold text-[#003366] mb-2">Collateral Exclusions</h2>
-              <p className="text-xs text-gray-500 mb-4">Click segments to exclude them from the security package</p>
-              <div className="flex flex-wrap gap-2">
-                {segOptions.map(seg => (
-                  <button key={seg} type="button" onClick={() => toggleExclusion(seg)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      excludedSegments.includes(seg) ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
-                    }`}>
-                    {excludedSegments.includes(seg) ? 'Excluded: ' : ''}{seg}
-                  </button>
-                ))}
-              </div>
-            </section>
-
             {/* Security Package Summary */}
             {confirmed && poolMetrics && (
               <section className="bg-white rounded-xl border-2 border-[#003366] p-6">
@@ -264,7 +242,7 @@ export default function SelectionPage() {
                   <MetricBox label="Diversification" value={`${poolMetrics.geoCount} regions, ${poolMetrics.productCount} products`} />
                 </div>
                 <div className="text-xs text-gray-500">
-                  <p>Exclusions: {excludedSegments.length > 0 ? excludedSegments.join(', ') : 'None'}</p>
+
                   <p>Filters: Amount {loanAmountMin.toLocaleString()}–{loanAmountMax.toLocaleString()}, Rate {rateMin}–{rateMax}%
                     {selectedGeos.length > 0 ? `, Geo: ${selectedGeos.join(', ')}` : ''}
                     {selectedProducts.length > 0 ? `, Products: ${selectedProducts.join(', ')}` : ''}
