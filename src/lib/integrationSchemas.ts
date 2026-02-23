@@ -23,34 +23,44 @@ export interface DocTypeSchema {
   sftpConfig: { host: string; port: string; path: string; schedule: string; format: string };
 }
 
-// Loan Book fields
+// Loan Book fields — column order matches sample-loan-book-template.xlsx (cols A–K required, L–P optional)
 const LOAN_BOOK_FIELDS: FieldDef[] = [
-  { key: 'loanId', label: 'Loan ID', type: 'string', required: true, sampleValue: 'LN-001234' },
-  { key: 'applicationId', label: 'Application ID', type: 'string', required: true, sampleValue: 'APP-5678' },
-  { key: 'borrowerName', label: 'Borrower Name', type: 'string', required: true, sampleValue: 'Jane Mwangi' },
-  { key: 'dpdAsOfReportingDate', label: 'DPD as of Reporting Date', type: 'number', required: true, sampleValue: '15' },
-  { key: 'currentBalance', label: 'Current Balance', type: 'number', required: true, sampleValue: '245000' },
-  { key: 'loanDisbursedAmount', label: 'Loan Disbursed Amount', type: 'number', required: true, sampleValue: '300000' },
-  { key: 'totalOverdueAmount', label: 'Total Overdue Amount', type: 'number', required: true, sampleValue: '12500' },
-  { key: 'loanDisbursedDate', label: 'Loan Disbursed Date', type: 'date', required: true, sampleValue: '2024-03-15' },
-  { key: 'interestRate', label: 'Interest Rate', type: 'percent', required: true, sampleValue: '18.5' },
-  { key: 'loanWrittenOff', label: 'Loan Written Off', type: 'boolean', required: true, sampleValue: 'false' },
-  { key: 'repossession', label: 'Repossession', type: 'boolean', required: true, sampleValue: 'false' },
-  { key: 'recoveryAfterWriteoff', label: 'Recovery after Writeoff', type: 'number', required: false, sampleValue: '0' },
+  { key: 'loanId', label: 'Loan ID', type: 'string', required: true, sampleValue: 'LN1001' },
+  { key: 'applicationId', label: 'Application ID', type: 'string', required: true, sampleValue: 'APP2001' },
+  { key: 'dpdAsOfReportingDate', label: 'DPD as of Reporting Date', type: 'number', required: true, sampleValue: '0' },
+  { key: 'currentBalance', label: 'Current Balance', type: 'number', required: true, sampleValue: '83413.02' },
+  { key: 'loanDisbursedAmount', label: 'Loan Disbursed Amount', type: 'number', required: true, sampleValue: '110555.29' },
+  { key: 'totalOverdueAmount', label: 'Total Overdue Amount', type: 'number', required: true, sampleValue: '0' },
+  { key: 'loanDisbursedDate', label: 'Loan Disbursed Date', type: 'date', required: true, sampleValue: '2025-10-11' },
+  { key: 'interestRate', label: 'Interest Rate', type: 'percent', required: true, sampleValue: '16.49' },
+  { key: 'loanWrittenOff', label: 'Loan Written Off', type: 'boolean', required: true, sampleValue: 'FALSE' },
+  { key: 'repossession', label: 'Repossession', type: 'boolean', required: true, sampleValue: 'FALSE' },
+  { key: 'recoveryAfterWriteoff', label: 'Recovery after Writeoff', type: 'number', required: true, sampleValue: '0' },
   { key: 'geography', label: 'Geography', type: 'string', required: false, sampleValue: 'Nairobi' },
-  { key: 'product', label: 'Product', type: 'string', required: false, sampleValue: 'SME Loan' },
-  { key: 'segment', label: 'Segment', type: 'string', required: false, sampleValue: 'Micro' },
-  { key: 'residualTenureMonths', label: 'Residual Tenure (Months)', type: 'number', required: false, sampleValue: '18' },
+  { key: 'product', label: 'Product', type: 'string', required: false, sampleValue: 'MSME' },
+  { key: 'segment', label: 'Segment', type: 'string', required: false, sampleValue: 'Individual' },
+  { key: 'borrowerName', label: 'Borrower Name', type: 'string', required: false, sampleValue: 'Chebet Wambui' },
+  { key: 'residualTenureMonths', label: 'Residual Tenure (Months)', type: 'number', required: false, sampleValue: '27' },
 ];
 
+// Auto-map keys use snake_case column headers matching sample-loan-book-template.xlsx
 const LOAN_BOOK_AUTO_MAP: Record<string, string> = {
-  'Loan ID': 'loanId', 'Application ID': 'applicationId', 'Borrower Name': 'borrowerName',
-  'DPD as of Reporting Date': 'dpdAsOfReportingDate', 'Current Balance': 'currentBalance',
-  'Loan Disbursed Amount': 'loanDisbursedAmount', 'Total Overdue Amount': 'totalOverdueAmount',
-  'Loan Disbursed Date': 'loanDisbursedDate', 'Interest Rate': 'interestRate',
-  'Loan Written Off': 'loanWrittenOff', 'Repossession': 'repossession',
-  'Recovery after Writeoff': 'recoveryAfterWriteoff', 'Geography': 'geography',
-  'Product': 'product', 'Segment': 'segment', 'Residual Tenure': 'residualTenureMonths',
+  'loan_id': 'loanId',
+  'application_id': 'applicationId',
+  'dpd_as_of_reporting_date': 'dpdAsOfReportingDate',
+  'current_balance': 'currentBalance',
+  'loan_disbursed_amount': 'loanDisbursedAmount',
+  'total_overdue_amount': 'totalOverdueAmount',
+  'loan_disbursed_date': 'loanDisbursedDate',
+  'interest_rate': 'interestRate',
+  'loan_written_off': 'loanWrittenOff',
+  'repossession': 'repossession',
+  'recovery_after_writeoff': 'recoveryAfterWriteoff',
+  'geography': 'geography',
+  'product': 'product',
+  'segment': 'segment',
+  'borrower_name': 'borrowerName',
+  'residual_tenure_months': 'residualTenureMonths',
 };
 
 // Financial Statements - Balance Sheet (from input-template.json)

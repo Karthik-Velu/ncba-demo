@@ -43,23 +43,29 @@ const REQUIRED_FIELDS = [
 ];
 
 const DETECTED_COLUMNS = [
-  'Loan ID', 'Application ID', 'DPD as of Reporting Date', 'Current Balance',
-  'Loan Disbursed Amount', 'Total Overdue Amount', 'Loan Disbursed Date',
-  'Interest Rate', 'Loan Written Off', 'Repossession', 'Recovery after Writeoff',
+  'loan_id', 'application_id', 'dpd_as_of_reporting_date', 'current_balance',
+  'loan_disbursed_amount', 'total_overdue_amount', 'loan_disbursed_date',
+  'interest_rate', 'loan_written_off', 'repossession', 'recovery_after_writeoff',
+  'geography', 'product', 'segment', 'borrower_name', 'residual_tenure_months',
 ];
 
 const AUTO_MAPPING: Record<string, string> = {
-  'Loan ID': 'loanId',
-  'Application ID': 'applicationId',
-  'DPD as of Reporting Date': 'dpdAsOfReportingDate',
-  'Current Balance': 'currentBalance',
-  'Loan Disbursed Amount': 'loanDisbursedAmount',
-  'Total Overdue Amount': 'totalOverdueAmount',
-  'Loan Disbursed Date': 'loanDisbursedDate',
-  'Interest Rate': 'interestRate',
-  'Loan Written Off': 'loanWrittenOff',
-  'Repossession': 'repossession',
-  'Recovery after Writeoff': 'recoveryAfterWriteoff',
+  'loan_id': 'loanId',
+  'application_id': 'applicationId',
+  'dpd_as_of_reporting_date': 'dpdAsOfReportingDate',
+  'current_balance': 'currentBalance',
+  'loan_disbursed_amount': 'loanDisbursedAmount',
+  'total_overdue_amount': 'totalOverdueAmount',
+  'loan_disbursed_date': 'loanDisbursedDate',
+  'interest_rate': 'interestRate',
+  'loan_written_off': 'loanWrittenOff',
+  'repossession': 'repossession',
+  'recovery_after_writeoff': 'recoveryAfterWriteoff',
+  'geography': 'geography',
+  'product': 'product',
+  'segment': 'segment',
+  'borrower_name': 'borrowerName',
+  'residual_tenure_months': 'residualTenureMonths',
 };
 
 const FORMAT_TESTS = [
