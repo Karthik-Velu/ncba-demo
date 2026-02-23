@@ -291,9 +291,67 @@ export default function SetupPage() {
 
         {activeTab === 'provisioning' && (
           <div className="space-y-6">
-            <p className="text-sm text-gray-600">
-              IFRS 9 three-stage ECL framework: Stage 1 (Normal, 0–30 DPD) = 12-month ECL; Stage 2 (Watch/Substandard, 31–90 DPD, significant increase in credit risk) = lifetime ECL; Stage 3 (Doubtful/Loss, 90+ DPD, credit-impaired) = lifetime ECL. DPD-based staging uses the 30-day past-due rebuttable presumption per IFRS 9.5.5.11. Provision rates below represent a simplified, loss-rate approximation of ECL.
-            </p>
+            {/* ECL & Provisioning explainer */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-bold text-blue-900">How Provisioning &amp; ECL Work Together</h3>
+
+              {/* Stage mapping table */}
+              <div>
+                <p className="text-xs font-medium text-blue-800 mb-2">
+                  Each loan is staged by DPD under IFRS 9, which determines the ECL horizon applied to it:
+                </p>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-blue-100 text-blue-800">
+                      <th className="text-left px-3 py-2 font-semibold rounded-tl">IFRS 9 Stage</th>
+                      <th className="text-left px-3 py-2 font-semibold">Buckets</th>
+                      <th className="text-left px-3 py-2 font-semibold">DPD Range</th>
+                      <th className="text-left px-3 py-2 font-semibold rounded-tr">ECL Horizon</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-blue-900">
+                    <tr className="border-t border-blue-200">
+                      <td className="px-3 py-2 font-medium">Stage 1 — Performing</td>
+                      <td className="px-3 py-2">Normal</td>
+                      <td className="px-3 py-2 font-mono">0–30 DPD</td>
+                      <td className="px-3 py-2">12-month ECL</td>
+                    </tr>
+                    <tr className="border-t border-blue-200 bg-blue-50/60">
+                      <td className="px-3 py-2 font-medium">Stage 2 — Under Watch</td>
+                      <td className="px-3 py-2">Watch / Substandard</td>
+                      <td className="px-3 py-2 font-mono">31–90 DPD</td>
+                      <td className="px-3 py-2">Lifetime ECL <span className="text-blue-600">(SICR triggered)</span></td>
+                    </tr>
+                    <tr className="border-t border-blue-200">
+                      <td className="px-3 py-2 font-medium">Stage 3 — Credit-Impaired</td>
+                      <td className="px-3 py-2">Doubtful / Loss</td>
+                      <td className="px-3 py-2 font-mono">91+ DPD</td>
+                      <td className="px-3 py-2">Lifetime ECL <span className="text-blue-600">(impaired)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-xs text-blue-600 mt-1.5">Stage 1/2 boundary uses the 30-day past-due rebuttable presumption per IFRS 9.5.5.11.</p>
+              </div>
+
+              {/* Formula + relationship */}
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div className="bg-white border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-blue-800 mb-1">Provision Calculation</p>
+                  <p className="text-xs font-mono text-gray-800 bg-gray-50 rounded px-2.5 py-1.5 border border-gray-200">
+                    Provision = Outstanding Balance × Provision %
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    The % is applied to the <strong>current outstanding balance</strong> of each bucket — not to the ECL figure itself.
+                  </p>
+                </div>
+                <div className="bg-white border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-blue-800 mb-1">Relationship to ECL</p>
+                  <p className="text-xs text-gray-600">
+                    ECL is computed separately on the monitoring dashboard using <span className="font-mono">PD × LGD × EAD</span> per loan. The provision % rates configured here are calibrated to <strong>approximate those ECL outcomes</strong> using a simpler balance-based charge — useful for regulatory reporting and policy comparison.
+                  </p>
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-6">
               {[
                 { title: 'NBFI Policy', rules: nbfiRules, setter: setNbfiRules },
