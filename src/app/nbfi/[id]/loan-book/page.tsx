@@ -42,6 +42,12 @@ const REQUIRED_FIELDS = [
   'interestRate', 'loanWrittenOff', 'repossession', 'recoveryAfterWriteoff',
 ];
 
+const OPTIONAL_FIELDS = [
+  'geography', 'product', 'segment', 'borrowerName', 'residualTenureMonths',
+];
+
+const ALL_PLATFORM_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
+
 const DETECTED_COLUMNS = [
   'loan_id', 'application_id', 'dpd_as_of_reporting_date', 'current_balance',
   'loan_disbursed_amount', 'total_overdue_amount', 'loan_disbursed_date',
@@ -388,7 +394,7 @@ export default function LoanBookPage() {
                             <select value={columnMapping[col] || ''} onChange={e => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))}
                               className="w-full text-xs border border-gray-200 rounded px-2 py-1 bg-white">
                               <option value="">— unmapped —</option>
-                              {REQUIRED_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
+                              {ALL_PLATFORM_FIELDS.map(f => <option key={f} value={f}>{f}</option>)}
                             </select>
                           </td>
                           <td className="px-3 py-2">
