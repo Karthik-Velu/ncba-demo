@@ -350,12 +350,6 @@ export default function SetupPage() {
                 </div>
               ))}
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Lender provisioning rates account for the security package (loan book assignment, guarantees, DSRA).
-                With adequate collateral coverage, provisioning rates may be adjusted downward.
-              </p>
-            </div>
           </div>
         )}
       </main>
