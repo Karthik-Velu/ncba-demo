@@ -40,7 +40,7 @@ export default function POCPage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="absolute inset-0 opacity-[0.07]"
           style={{ backgroundImage: 'radial-gradient(circle at 15% 60%, #0d9488 0%, transparent 55%), radial-gradient(circle at 85% 20%, #0f766e 0%, transparent 50%)' }} />
-        <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-24">
+        <div className="relative max-w-6xl mx-auto px-6 py-16 md:py-20">
           <div className="grid lg:grid-cols-2 gap-14 items-start">
 
             {/* Left: headline + description + metrics */}
@@ -58,14 +58,14 @@ export default function POCPage() {
                 financial spreading, MIS review, and cross-source validation — so your decision makers receive
                 a concise, expert-reviewed credit note, not a stack of spreadsheets.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 {[
                   { icon: Clock, label: 'T+4 Days TAT' },
                   { icon: Database, label: '3 Data Sources Triangulated' },
-                  { icon: Award, label: '1 ki score per Application' },
+                  { icon: Award, label: '1 ki score per Originator' },
                 ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-2 bg-white/10 border border-white/15 px-4 py-2 rounded text-sm font-medium">
-                    <Icon className="w-4 h-4 text-teal-400" />
+                  <div key={label} className="flex items-center gap-1.5 bg-white/10 border border-white/15 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap">
+                    <Icon className="w-3.5 h-3.5 text-teal-400" />
                     {label}
                   </div>
                 ))}
