@@ -379,7 +379,7 @@ export default function POCPage() {
                 {
                   icon: Target,
                   title: 'Concise, Not Overwhelming',
-                  body: 'The most important findings are surfaced front and centre. NCBA receives a single-page credit note with clear positives, risks, and a recommendation. Full analytical detail is available in the annexure for those who need it.',
+                  body: 'The most important findings are surfaced front and centre. NCBA receives a tight executive summary — clear positives, key risks, and a decisive recommendation — with full analytical detail in the annexure for those who need it.',
                 },
                 {
                   icon: Shield,
