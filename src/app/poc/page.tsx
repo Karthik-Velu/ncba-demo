@@ -38,7 +38,7 @@ export default function POCPage() {
             <a href="#how-it-works" className="hover:text-teal-600 transition-colors">How It Works</a>
             <a href="#ki-score" className="hover:text-teal-600 transition-colors">ki score</a>
             <a href="#rationale" className="hover:text-teal-600 transition-colors">Why POC</a>
-            <a href="#vision" className="hover:text-teal-600 transition-colors">Long-Term Vision</a>
+            <a href="#vision" className="hover:text-teal-600 transition-colors">What&apos;s Next</a>
           </div>
           {/* Confidential badge instead of CTA */}
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 text-slate-500 text-xs px-3 py-1.5 rounded-full font-medium">
@@ -86,61 +86,51 @@ export default function POCPage() {
         </div>
       </section>
 
-      {/* ── 3. THE PROBLEM ──────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
+      {/* ── 3. VALUE PROPOSITION ────────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 py-14">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">The Problem Today</h2>
-          <p className="text-slate-500 text-sm max-w-xl mx-auto">NBFI credit assessment is manual, slow, and inconsistent — creating risk for NCBA and delay for borrowers.</p>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">What Kaleidofin Delivers</h2>
+          <p className="text-slate-500 text-sm max-w-xl mx-auto">From raw loan tape to a decision-ready credit note — automated, validated, and expert-reviewed.</p>
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Today */}
-          <div className="bg-white border border-red-100 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
-                <span className="text-red-600 text-xs font-bold">✕</span>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            {
+              icon: Database,
+              color: 'bg-blue-50 border-blue-100',
+              iconColor: 'text-blue-600 bg-blue-100',
+              title: 'Loan Tape Analytics',
+              body: 'DPD buckets, vintage curves, roll rates, and ECL estimated automatically — overnight — from 12+ months of loan-level data.',
+            },
+            {
+              icon: FileSpreadsheet,
+              color: 'bg-violet-50 border-violet-100',
+              iconColor: 'text-violet-600 bg-violet-100',
+              title: 'Automated Financial Spreading',
+              body: 'Balance sheet, P&L, and cash flow spread from audited financials — no manual re-keying, consistent format every time.',
+            },
+            {
+              icon: RefreshCw,
+              color: 'bg-amber-50 border-amber-100',
+              iconColor: 'text-amber-600 bg-amber-100',
+              title: 'Cross-Source Validation',
+              body: 'Loan tape, financials, and MIS are triangulated automatically — discrepancies flagged before any credit decision is made.',
+            },
+            {
+              icon: Users,
+              color: 'bg-teal-50 border-teal-100',
+              iconColor: 'text-teal-600 bg-teal-100',
+              title: 'Expert-Reviewed Credit Note',
+              body: 'Every output is reviewed by a Kaleidofin credit analyst before delivery to NCBA — structured for immediate decision.',
+            },
+          ].map(({ icon: Icon, color, iconColor, title, body }) => (
+            <div key={title} className={`rounded-xl border p-5 ${color}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-4 ${iconColor}`}>
+                <Icon className="w-4 h-4" />
               </div>
-              <h3 className="font-semibold text-slate-700">Today — Manual Process</h3>
+              <h3 className="font-semibold text-slate-800 text-sm mb-2">{title}</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">{body}</p>
             </div>
-            <ul className="space-y-3 text-sm text-slate-600">
-              {[
-                'Loan tape downloaded and analysed manually in Excel — weeks of analyst time',
-                'Financial statements re-keyed from PDFs with no automated reconciliation',
-                'MIS data reviewed in isolation — no cross-check against loan tape or financials',
-                'Data quality issues (negative balances, sequence gaps) often missed',
-                'Final credit note written from scratch each time — no structured framework',
-                'TAT of 3–6 weeks or more from full data submission to decision',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* With Kaleidofin */}
-          <div className="bg-white border border-teal-100 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-              </div>
-              <h3 className="font-semibold text-slate-700">With Kaleidofin — Automated Intelligence</h3>
-            </div>
-            <ul className="space-y-3 text-sm text-slate-600">
-              {[
-                'Loan tape ingested via SFTP and analysed overnight — DPD buckets, vintage curves, roll rates, ECL',
-                'Financial statements (audited or Perfios output) parsed and spread automatically',
-                'MIS figures cross-validated against loan tape and financials — discrepancies flagged instantly',
-                'Data quality checks run on every upload — 30+ validation rules across all data sources',
-                'Expert-reviewed credit note in a consistent structured format — every time',
-                'T+4 business days from full data submission to final decision note',
-              ].map(t => (
-                <li key={t} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -542,170 +532,125 @@ export default function POCPage() {
         </div>
       </section>
 
-      {/* ── 8. PERFIOS INTEGRATION ──────────────────────────────────── */}
-      <section className="bg-white border-y border-slate-200 py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-violet-100 text-violet-700 text-xs px-3 py-1.5 rounded-full mb-4 font-medium">
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                Perfios Integration
-              </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-3">Works With Your Existing Perfios Workflow</h2>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                NCBA already uses Perfios for financial statement spreading. Rather than creating two parallel
-                analysis streams that produce separate outputs, Kaleidofin can build integration so that
-                Perfios financial analysis and the Kaleidofin loan tape + MIS analysis feed into
-                <strong> one combined, unified assessment</strong> — driving a single final decision.
-              </p>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                The result: a complete picture of the originator — balance sheet strength from Perfios,
-                loan portfolio quality from Kaleidofin — triangulated and presented as one credit note.
-                No duplicate workflows. No conflicting outputs.
-              </p>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-              <h4 className="text-sm font-semibold text-slate-600 mb-4 uppercase tracking-wide">Combined Analysis Flow</h4>
-              <div className="space-y-3">
-                {[
-                  { label: 'Perfios Financial Spreading', sub: 'Balance sheet, P&L, ratios — via existing NCBA workflow', color: 'bg-violet-100 text-violet-700' },
-                  { label: '+  Kaleidofin Loan Tape Analysis', sub: '12+ months performance data — PAR, vintages, ECL', color: 'bg-blue-100 text-blue-700' },
-                  { label: '+  MIS Cross-Validation', sub: 'Monthly management accounts reconciled across all sources', color: 'bg-amber-100 text-amber-700' },
-                ].map(({ label, sub, color }) => (
-                  <div key={label} className={`rounded-lg px-4 py-3 text-xs font-medium ${color}`}>
-                    {label}
-                    <div className="font-normal opacity-70 mt-0.5">{sub}</div>
-                  </div>
-                ))}
-                <div className="flex items-center justify-center py-2">
-                  <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
-                </div>
-                <div className="bg-teal-600 text-white rounded-lg px-4 py-3 text-xs font-semibold text-center">
-                  Single Unified Credit Note + ki score of Kaleidofin
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 9. LONG-TERM VISION ─────────────────────────────────────── */}
+      {/* ── 9. WHAT'S NEXT — THE FULL PLATFORM ─────────────────────── */}
       <section id="vision" className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Long-Term Vision — The Full Platform</h2>
+          <div className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 text-xs px-3 py-1.5 rounded-full mb-4 font-medium">
+            <ArrowRight className="w-3.5 h-3.5" />
+            After a successful POC
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">What&apos;s Next — The Full Platform</h2>
           <p className="text-slate-500 text-sm max-w-xl mx-auto">
-            The POC is not a throwaway exercise. Every format mapping, validation rule, and analytical
-            output built during the pilot feeds directly into the full platform when NCBA is ready to scale.
+            The POC is not a throwaway. Every format mapping, validation rule, and analytical model built
+            during the pilot feeds directly into the full platform. The step from POC to full deployment
+            is a natural extension — not a separate project.
           </p>
         </div>
 
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="hidden md:block absolute top-8 left-0 right-0 h-0.5 bg-slate-200 mx-16" />
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                phase: 'Now',
-                label: 'POC',
-                icon: Zap,
-                color: 'bg-teal-600 text-white',
-                borderColor: 'border-teal-200',
-                items: [
-                  'One pilot originator',
-                  'SFTP data ingestion',
-                  'Custom format mapping',
-                  'Automated analysis overnight',
-                  'Expert-reviewed credit note',
-                  'T+4 business days TAT',
-                ],
-              },
-              {
-                phase: 'Phase 2',
-                label: 'Workflow Platform',
-                icon: Layers,
-                color: 'bg-blue-600 text-white',
-                borderColor: 'border-blue-200',
-                items: [
-                  'Full workflow UI for NCBA team',
-                  'NBFI onboarding & document portal',
-                  'Covenant monitoring dashboard',
-                  'Pipeline management across originators',
-                  'Automated early warning system',
-                  'Audit trail & compliance logging',
-                ],
-              },
-              {
-                phase: 'Phase 3',
-                label: 'Full Ecosystem',
-                icon: TrendingUp,
-                color: 'bg-violet-600 text-white',
-                borderColor: 'border-violet-200',
-                items: [
-                  'NBFI self-service portal',
-                  'Live securitisation structuring tools',
-                  'Regulatory reporting automation',
-                  'Multi-lender benchmarking',
-                  'Investor reporting & disclosure portal',
-                  'API integration with core banking',
-                ],
-              },
-            ].map(({ phase, label, icon: Icon, color, borderColor, items }) => (
-              <div key={phase} className={`bg-white border ${borderColor} rounded-xl overflow-hidden shadow-sm`}>
-                <div className={`${color} px-5 py-4`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon className="w-4 h-4" />
-                    <span className="text-xs font-medium opacity-80">{phase}</span>
-                  </div>
-                  <h3 className="font-bold text-base">{label}</h3>
-                </div>
-                <ul className="p-5 space-y-2">
-                  {items.map(item => (
+        <div className="grid md:grid-cols-2 gap-8 items-start mb-8">
+          {/* Left: Full platform capabilities */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-slate-800 text-white px-5 py-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Layers className="w-4 h-4 text-teal-400" />
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Full Platform</span>
+              </div>
+              <h3 className="font-bold text-base">Complete Wholesale Lending Intelligence</h3>
+            </div>
+            <div className="p-5 space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Credit Decisioning</p>
+                <ul className="space-y-2">
+                  {[
+                    'Multi-originator pipeline management — full workflow UI for NCBA team',
+                    'NBFI onboarding portal and document collection',
+                    'Loan tape analytics at scale — consistent analysis across all originators',
+                  ].map(item => (
                     <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0 mt-0.5" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Ongoing expert assistance */}
-        <div className="mt-8 bg-slate-900 text-white rounded-2xl p-8">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="w-5 h-5 text-teal-400" />
-                <h3 className="font-bold text-lg">Ongoing Expert Assistance — Always</h3>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Post-Disbursement Monitoring</p>
+                <ul className="space-y-2">
+                  {[
+                    'Covenant benchmarking and automated breach alerts',
+                    'Early warning system — deteriorating metrics flagged before breach',
+                    'Two-tier risk dashboard — NCBA wholesale view and underlying loan book view',
+                    'Quarterly performance spread — auto-classified into Normal / Watch / Substandard / Loss',
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-slate-300 text-sm leading-relaxed mb-4">
-                In the long term, Kaleidofin's model is not a black-box automation tool — it is a
-                <strong className="text-white"> credit intelligence partnership</strong>. Every piece of
-                system-generated analysis is reviewed by Kaleidofin credit experts before it is shared
-                with NCBA decision makers.
-              </p>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                As the platform scales to more originators and more complex structures, Kaleidofin
-                provides ongoing analytical expertise — ensuring quality remains consistent and
-                NCBA always has a knowledgeable counterpart to engage with on any case.
-              </p>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Integration & Reporting</p>
+                <ul className="space-y-2">
+                  {[
+                    'Native Perfios integration — financial spreading unified into one credit note alongside loan tape analytics',
+                    'SFTP and API ingestion for ongoing loan tape submissions',
+                    'Audit trail and compliance logging across all originators',
+                  ].map(item => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-500 flex-shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div className="space-y-3">
-              {[
-                { icon: Zap, label: 'Automated analysis runs first', sub: 'Kaleidofin engine processes all data sources' },
-                { icon: Users, label: 'Expert review and quality check', sub: 'Kaleidofin credit analysts validate every output' },
-                { icon: CheckCircle2, label: 'Approved note shared with NCBA', sub: 'Decision makers receive a quality-assured output' },
-              ].map(({ icon: Icon, label, sub }) => (
-                <div key={label} className="flex items-start gap-3 bg-white/5 rounded-lg p-3">
-                  <Icon className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-white">{label}</p>
-                    <p className="text-xs text-slate-400">{sub}</p>
+          </div>
+
+          {/* Right: Expert model — stays throughout */}
+          <div className="space-y-5">
+            <div className="bg-slate-900 text-white rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-teal-400" />
+                <h3 className="font-bold text-base">The Expert Model Stays — Always</h3>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed mb-5">
+                Whether for the POC or the full platform, Kaleidofin&apos;s model is a
+                <strong className="text-white"> credit intelligence partnership</strong> — not a
+                black-box tool. Every system-generated analysis is reviewed by a Kaleidofin credit expert
+                before it is shared with NCBA. Automation handles the heavy lifting; expert judgement
+                ensures the final note is decision-ready.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { icon: Zap, label: 'Automated analysis runs first', sub: 'Engine processes loan tape, financials, and MIS overnight' },
+                  { icon: Users, label: 'Kaleidofin expert reviews all outputs', sub: 'Analyst validates, adds qualitative context, and signs off' },
+                  { icon: CheckCircle2, label: 'Final credit note delivered to NCBA', sub: 'Structured, quality-assured, and ready for credit committee' },
+                ].map(({ icon: Icon, label, sub }) => (
+                  <div key={label} className="flex items-start gap-3 bg-white/5 rounded-lg p-3">
+                    <Icon className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-white">{label}</p>
+                      <p className="text-xs text-slate-400">{sub}</p>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-teal-50 border border-teal-200 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <TrendingUp className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-teal-800 text-sm mb-1">Loan Tape Analytics at the Core — at Every Stage</h4>
+                  <p className="text-teal-700 text-sm leading-relaxed">
+                    Loan tape analysis is not just an input for the initial credit decision — it is the
+                    foundation for continuous monitoring. The same engine that analyses the loan tape for
+                    the credit note runs monthly post-disbursement, ensuring NCBA has an up-to-date,
+                    analyst-reviewed view of every originator&apos;s portfolio at all times.
+                  </p>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
