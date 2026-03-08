@@ -4,7 +4,7 @@ import React from 'react';
 import {
   CheckCircle2, AlertTriangle, ArrowRight, Database, FileSpreadsheet,
   BarChart3, Shield, Users, Zap, Clock, TrendingUp, RefreshCw,
-  ChevronRight, Star, Target, Layers, GitBranch, Award,
+  ChevronRight, Target, Layers, GitBranch, Award,
 } from 'lucide-react';
 
 export default function POCPage() {
@@ -12,29 +12,18 @@ export default function POCPage() {
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
       <style>{`
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(24px); }
+          from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+        .fade-up { animation: fadeUp 0.55s ease forwards; opacity: 0; }
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
         .delay-4 { animation-delay: 0.4s; }
-        .delay-5 { animation-delay: 0.5s; }
-        .delay-6 { animation-delay: 0.6s; }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .score-ring {
-          stroke-dasharray: 251;
-          stroke-dashoffset: 68;
-          transition: stroke-dashoffset 1s ease;
-        }
       `}</style>
 
       {/* ── 1. NAVIGATION ───────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
@@ -50,7 +39,11 @@ export default function POCPage() {
             <a href="#ki-score" className="hover:text-teal-600 transition-colors">ki score</a>
             <a href="#rationale" className="hover:text-teal-600 transition-colors">Why POC</a>
             <a href="#vision" className="hover:text-teal-600 transition-colors">Long-Term Vision</a>
-            <a href="#cta" className="bg-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-teal-700 transition-colors">Get Started</a>
+          </div>
+          {/* Confidential badge instead of CTA */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 text-slate-500 text-xs px-3 py-1.5 rounded-full font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            Confidential — For NCBA
           </div>
         </div>
       </nav>
@@ -60,9 +53,14 @@ export default function POCPage() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #0d9488 0%, transparent 60%), radial-gradient(circle at 80% 20%, #0ea5e9 0%, transparent 50%)' }} />
         <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <div className="inline-flex items-center gap-2 bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs px-3 py-1.5 rounded-full mb-6 fade-up">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-            Proof of Concept Proposal — NCBA Wholesale Lending
+          <div className="flex flex-wrap items-center gap-2 mb-6 fade-up">
+            <div className="inline-flex items-center gap-2 bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+              Proof of Concept Proposal
+            </div>
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-slate-300 text-xs px-3 py-1.5 rounded-full">
+              Prepared exclusively for NCBA Wholesale Lending
+            </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl mb-6 fade-up delay-1">
             Credit Intelligence for NBFI Wholesale Lending —<br />
@@ -158,23 +156,27 @@ export default function POCPage() {
             </p>
           </div>
 
-          {/* Flow steps */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+          {/* Flow steps — flex row with arrows */}
+          <div className="flex flex-col md:flex-row items-stretch gap-0">
             {[
               {
                 step: '01',
                 icon: Database,
                 title: 'SFTP Data Drop',
-                desc: 'Originator shares Loan Tape (12+ months performance data), Financial Statements, and Monthly MIS via secure SFTP.',
-                color: 'bg-blue-50 border-blue-200 text-blue-700',
+                desc: 'Originator shares Loan Tape (12+ months), Financial Statements, and Monthly MIS via secure SFTP.',
+                bg: 'bg-blue-50',
+                border: 'border-blue-200',
+                text: 'text-blue-700',
                 iconColor: 'text-blue-500',
               },
               {
                 step: '02',
                 icon: GitBranch,
                 title: 'Custom Format Mapping',
-                desc: 'Kaleidofin builds a bespoke mapping layer for the originator\'s exact data format — column names, date formats, field conventions.',
-                color: 'bg-violet-50 border-violet-200 text-violet-700',
+                desc: 'Kaleidofin builds a bespoke mapping layer for the originator\'s exact column names, date formats, and field conventions.',
+                bg: 'bg-violet-50',
+                border: 'border-violet-200',
+                text: 'text-violet-700',
                 iconColor: 'text-violet-500',
               },
               {
@@ -182,38 +184,44 @@ export default function POCPage() {
                 icon: Zap,
                 title: 'Automated Analysis',
                 desc: 'The Kaleidofin engine runs overnight — generating DPD analysis, vintage curves, ECL estimates, financial ratios, and cross-source validation.',
-                color: 'bg-amber-50 border-amber-200 text-amber-700',
+                bg: 'bg-amber-50',
+                border: 'border-amber-200',
+                text: 'text-amber-700',
                 iconColor: 'text-amber-500',
               },
               {
                 step: '04',
                 icon: Users,
-                title: 'Kaleidofin Expert Review',
+                title: 'Expert Review',
                 desc: 'A Kaleidofin analyst reviews all system-generated outputs, adds qualitative context, and prepares the final credit note.',
-                color: 'bg-teal-50 border-teal-200 text-teal-700',
+                bg: 'bg-teal-50',
+                border: 'border-teal-200',
+                text: 'text-teal-700',
                 iconColor: 'text-teal-500',
               },
               {
                 step: '05',
                 icon: CheckCircle2,
                 title: 'Final Note to NCBA',
-                desc: 'NCBA decision makers receive a concise, structured credit note with ki score of Kaleidofin, estimated loss, and deal structuring recommendations.',
-                color: 'bg-green-50 border-green-200 text-green-700',
+                desc: 'NCBA decision makers receive a structured credit note with ki score, estimated loss, and deal structuring recommendations.',
+                bg: 'bg-green-50',
+                border: 'border-green-200',
+                text: 'text-green-700',
                 iconColor: 'text-green-500',
               },
-            ].map(({ step, icon: Icon, title, desc, color, iconColor }, i) => (
+            ].map(({ step, icon: Icon, title, desc, bg, border, text, iconColor }, i) => (
               <React.Fragment key={step}>
-                <div className={`relative border rounded-xl p-5 ${color}`}>
+                <div className={`flex-1 border rounded-xl p-5 ${bg} ${border} ${text}`}>
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className={`w-5 h-5 ${iconColor}`} />
-                    <span className="text-xs font-bold opacity-60">STEP {step}</span>
+                    <span className="text-xs font-bold opacity-50 tracking-wider">STEP {step}</span>
                   </div>
                   <h4 className="font-semibold text-sm mb-2">{title}</h4>
-                  <p className="text-xs opacity-80 leading-relaxed">{desc}</p>
+                  <p className="text-xs opacity-75 leading-relaxed">{desc}</p>
                 </div>
                 {i < 4 && (
-                  <div className="hidden md:flex items-center justify-center col-span-0">
-                    <ArrowRight className="w-5 h-5 text-slate-300 -mx-2 mt-4" />
+                  <div className="hidden md:flex items-center justify-center px-1 flex-shrink-0">
+                    <ArrowRight className="w-4 h-4 text-slate-300" />
                   </div>
                 )}
               </React.Fragment>
@@ -341,7 +349,7 @@ export default function POCPage() {
                   <h3 className="font-bold text-slate-800 text-lg">Premier Credit Kenya Ltd</h3>
                   <p className="text-xs text-slate-400">Assessment Date: March 2025 · Prepared by Kaleidofin</p>
                 </div>
-                <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full">
+                <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
                   Conditional Approve
                 </span>
               </div>
@@ -361,7 +369,7 @@ export default function POCPage() {
                       strokeDashoffset="68"
                       transform="rotate(-90 45 45)"
                     />
-                    <text x="45" y="48" textAnchor="middle" className="text-slate-800" style={{ fontSize: '14px', fontWeight: 700, fill: '#0f172a' }}>72</text>
+                    <text x="45" y="48" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 700, fill: '#0f172a' }}>72</text>
                     <text x="45" y="60" textAnchor="middle" style={{ fontSize: '7px', fill: '#94a3b8' }}>/100</text>
                   </svg>
                   <p className="text-xs text-slate-500 mt-1 text-center font-medium">ki score of Kaleidofin</p>
@@ -525,11 +533,12 @@ export default function POCPage() {
           ))}
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-sm text-blue-800">
-          <Star className="w-4 h-4 inline-block mr-2 text-blue-500" />
-          <strong>Key insight:</strong> The underlying intelligence — the Kaleidofin engine, data models, and analytical framework —
-          is the complex and time-consuming part to build. The UI that manages workflow can be layered on top at any stage,
-          since the hard work is already done. Starting with a POC lets NCBA validate the critical substance before investing in the surface.
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800">
+          <p>
+            <strong>Key insight:</strong> The underlying intelligence — the Kaleidofin engine, data models, and analytical framework —
+            is the complex and time-consuming part to build. The UI that manages workflow can be layered on top at any stage,
+            since the hard work is already done. Starting with a POC lets NCBA validate the critical substance before investing in the surface.
+          </p>
         </div>
       </section>
 
@@ -702,48 +711,71 @@ export default function POCPage() {
         </div>
       </section>
 
-      {/* ── 10. FOOTER / CTA ────────────────────────────────────────── */}
-      <section id="cta" className="bg-teal-700 text-white py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold mb-3">Ready to Run the Pilot?</h2>
-          <p className="text-teal-100 text-sm mb-8 max-w-xl mx-auto leading-relaxed">
-            The POC requires minimal setup from NCBA. Kaleidofin will configure the full
-            ingestion and analysis pipeline for the pilot originator. The first credit note
-            can be delivered within T+4 business days of complete data submission.
-          </p>
-          <div className="grid sm:grid-cols-3 gap-4 mb-8">
+      {/* ── 10. PROPOSED NEXT STEPS ─────────────────────────────────── */}
+      <section id="next-steps" className="bg-slate-900 text-white py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold mb-3">Proposed Pilot Structure</h2>
+            <p className="text-slate-400 text-sm max-w-lg mx-auto leading-relaxed">
+              The POC requires minimal setup from NCBA. Kaleidofin handles the full ingestion and
+              analysis pipeline for the pilot originator — NCBA nominates the originator and receives the output.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 mb-10">
             {[
-              { step: '1', text: 'Nominate one pilot originator' },
-              { step: '2', text: 'Originator shares data via SFTP' },
-              { step: '3', text: 'Receive first ki score of Kaleidofin within T+4 days' },
-            ].map(({ step, text }) => (
-              <div key={step} className="bg-white/10 border border-white/20 rounded-xl p-4">
-                <div className="w-7 h-7 bg-white text-teal-700 rounded-full flex items-center justify-center font-bold text-sm mx-auto mb-2">{step}</div>
-                <p className="text-sm text-teal-100">{text}</p>
+              {
+                step: '01',
+                title: 'Nominate a Pilot Originator',
+                desc: 'NCBA selects one originator from the existing wholesale lending portfolio to participate in the pilot.',
+              },
+              {
+                step: '02',
+                title: 'Originator Shares Data via SFTP',
+                desc: 'The originator provides loan tape (12+ months), audited financials, and monthly MIS via secure SFTP.',
+              },
+              {
+                step: '03',
+                title: 'Receive First ki score within T+4',
+                desc: 'Kaleidofin delivers a complete, expert-reviewed credit note with ki score and deal structuring recommendations.',
+              },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="bg-white/5 border border-white/10 rounded-xl p-5">
+                <div className="text-teal-400 text-xs font-bold tracking-widest mb-3">STEP {step}</div>
+                <h4 className="font-semibold text-white text-sm mb-2">{title}</h4>
+                <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="mailto:partnerships@kaleidofin.com"
-              className="bg-white text-teal-700 font-semibold px-6 py-3 rounded-lg hover:bg-teal-50 transition-colors text-sm">
-              Contact Kaleidofin
-            </a>
-            <a href="#how-it-works"
-              className="border border-white/40 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors text-sm">
-              Review the Proposal
-            </a>
+
+          {/* What NCBA gets */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+            <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-4">What NCBA Can Expect from the POC</h4>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                { icon: Clock, text: 'First credit note delivered within T+4 business days of complete data submission' },
+                { icon: CheckCircle2, text: 'Structured ki score output with positives, risks, and deal structuring recommendations' },
+                { icon: Shield, text: 'Every output reviewed by a Kaleidofin credit expert before delivery to NCBA' },
+                { icon: Database, text: 'Full data quality report alongside the credit note — including any flags or discrepancies identified' },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-start gap-3 bg-white/5 rounded-lg p-3">
+                  <Icon className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-300">{text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="bg-slate-900 text-slate-500 py-6 text-center text-xs">
-        <div className="flex items-center justify-center gap-2 mb-2">
+      <footer className="bg-slate-950 text-slate-500 py-8 text-center text-xs border-t border-slate-800">
+        <div className="flex items-center justify-center gap-2 mb-3">
           <div className="w-5 h-5 rounded bg-teal-600 flex items-center justify-center">
             <span className="text-white font-bold text-xs">K</span>
           </div>
           <span className="text-slate-400 font-medium">Kaleidofin Credit Intelligence Platform</span>
         </div>
-        <p>This document is prepared by Kaleidofin for NCBA and is confidential. Not for distribution.</p>
+        <p className="text-slate-600">This document is prepared by Kaleidofin exclusively for NCBA and is strictly confidential. Not for distribution.</p>
       </footer>
     </div>
   );
