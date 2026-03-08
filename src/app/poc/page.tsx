@@ -14,10 +14,11 @@ export default function POCPage() {
       {/* ── NAVIGATION ──────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-teal-700 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <svg width="22" height="30" viewBox="0 0 51 71" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 24.9032L50.8025 0V19.9225L0 44.8257V24.9032Z" fill="#0F547E"/>
+              <path d="M0 45.3238L50.8025 70.2269V50.3044L0 25.4012V45.3238Z" fill="#28B2B6"/>
+            </svg>
             <div>
               <span className="font-bold text-slate-800 text-sm">Kaleidofin</span>
               <span className="text-slate-400 text-xs ml-2 hidden sm:inline">Credit Intelligence Platform</span>
@@ -40,31 +41,31 @@ export default function POCPage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="absolute inset-0 opacity-[0.07]"
           style={{ backgroundImage: 'radial-gradient(circle at 15% 60%, #0d9488 0%, transparent 55%), radial-gradient(circle at 85% 20%, #0f766e 0%, transparent 50%)' }} />
-        <div className="relative max-w-6xl mx-auto px-6 py-16 md:py-20">
-          <div className="grid lg:grid-cols-2 gap-14 items-start">
+        <div className="relative max-w-6xl mx-auto px-6 py-14 md:py-16">
+          <div className="grid lg:grid-cols-[1fr_340px] gap-10 items-center">
 
             {/* Left: headline + description + metrics */}
             <div>
-              <div className="inline-flex items-center gap-2 bg-teal-600/20 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded mb-6">
+              <div className="inline-flex items-center gap-2 bg-teal-600/20 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded mb-5">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
                 Proof of Concept Proposal · NCBA Wholesale Lending
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-5">
+              <h1 className="text-2xl md:text-[2.1rem] font-bold leading-tight mb-4">
                 Credit Intelligence for NBFI Wholesale Lending —{' '}
                 <span className="text-teal-400">From Raw Data to Decision in T+4 Business Days</span>
               </h1>
-              <p className="text-slate-300 text-base max-w-xl mb-8 leading-relaxed">
+              <p className="text-slate-300 text-sm max-w-xl mb-6 leading-relaxed">
                 Kaleidofin automates the most time-consuming parts of NBFI credit assessment — loan tape analysis,
                 financial spreading, MIS review, and cross-source validation — so your decision makers receive
                 a concise, expert-reviewed credit note, not a stack of spreadsheets.
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
                 {[
                   { icon: Clock, label: 'T+4 Days TAT' },
                   { icon: Database, label: '3 Data Sources Triangulated' },
                   { icon: Award, label: '1 ki score per Originator' },
                 ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5 bg-white/10 border border-white/15 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap">
+                  <div key={label} className="flex items-center gap-1.5 bg-white/10 border border-white/15 px-2.5 py-1.5 rounded text-xs font-medium whitespace-nowrap">
                     <Icon className="w-3.5 h-3.5 text-teal-400" />
                     {label}
                   </div>
@@ -73,9 +74,9 @@ export default function POCPage() {
             </div>
 
             {/* Right: pilot steps */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-5">Starting the pilot is straightforward</p>
-              <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-4">Getting started</p>
+              <div className="space-y-3">
                 {[
                   {
                     step: '01',
@@ -85,24 +86,24 @@ export default function POCPage() {
                   {
                     step: '02',
                     title: 'Share required files over SFTP',
-                    desc: 'Originator provides loan tape (12+ months), audited financials, and monthly MIS — no new systems required on NCBA\'s side.',
+                    desc: 'Loan tape (12+ months), audited financials, and monthly MIS — no new systems required.',
                   },
                   {
                     step: '03',
                     title: 'Receive the first ki score within T+4',
-                    desc: 'A complete, expert-reviewed credit note with ki score and deal structuring recommendations.',
+                    desc: 'Expert-reviewed credit note with ki score and deal structuring recommendations.',
                   },
                 ].map(({ step, title, desc }, i) => (
-                  <div key={step} className="flex gap-4">
+                  <div key={step} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className="w-7 h-7 rounded-full bg-teal-600/30 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
-                        <span className="text-teal-300 text-xs font-bold">{step}</span>
+                      <div className="w-6 h-6 rounded-full bg-teal-600/30 border border-teal-500/40 flex items-center justify-center flex-shrink-0">
+                        <span className="text-teal-300 text-[10px] font-bold">{step}</span>
                       </div>
-                      {i < 2 && <div className="w-px flex-1 bg-white/10 my-1" />}
+                      {i < 2 && <div className="w-px flex-1 bg-white/10 my-0.5" />}
                     </div>
-                    <div className="pb-4">
-                      <h4 className="font-semibold text-white text-sm mb-1">{title}</h4>
-                      <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+                    <div className={i < 2 ? 'pb-2' : ''}>
+                      <h4 className="font-semibold text-white text-xs mb-0.5">{title}</h4>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">{desc}</p>
                     </div>
                   </div>
                 ))}
@@ -580,9 +581,10 @@ export default function POCPage() {
       {/* ── FOOTER ──────────────────────────────────────────────────── */}
       <footer className="bg-slate-800 text-slate-400 py-8 text-center text-xs">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-5 h-5 rounded bg-teal-700 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">K</span>
-          </div>
+          <svg width="16" height="22" viewBox="0 0 51 71" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 24.9032L50.8025 0V19.9225L0 44.8257V24.9032Z" fill="#0F547E"/>
+            <path d="M0 45.3238L50.8025 70.2269V50.3044L0 25.4012V45.3238Z" fill="#28B2B6"/>
+          </svg>
           <span className="text-slate-300 font-medium">Kaleidofin Credit Intelligence Platform</span>
         </div>
         <p className="text-slate-500">This document is prepared by Kaleidofin exclusively for NCBA and is strictly confidential. Not for distribution.</p>
