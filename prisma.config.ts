@@ -1,0 +1,13 @@
+import { defineConfig } from "prisma/config";
+import path from "path";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "tsx --tsconfig tsconfig.json prisma/seed.ts",
+  },
+  datasource: {
+    url: `file:${path.join(process.cwd(), "prisma/dev.db")}`,
+  },
+});

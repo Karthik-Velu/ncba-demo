@@ -12,15 +12,14 @@ import { v4 as uuidv4 } from 'uuid';
 import inputTemplateData from '../../data/input-template.json';
 import nbfiOutputData from '../../data/nbfi-output.json';
 import cashflowData from '../../data/cashflow.json';
-import mockCovenantsData from '../../data/mock-covenants.json';
-import mockDocumentsData from '../../data/mock-documents.json';
-import mockMonitoringData from '../../data/mock-monitoring.json';
-import mockEarlyWarningsData from '../../data/mock-early-warnings.json';
-import { NBFI_SEEDS, TRANSACTION_MAP, TRANSACTION_NAMES, getAllSeedLoanBooks } from '@/lib/seedTransactions';
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 interface AppState {
   user: User | null;
   nbfis: NBFIRecord[];
+  loading: boolean;
   login: (role: 'analyst' | 'approver' | 'nbfi_user') => void;
   logout: () => void;
   addNBFI: (data: Omit<NBFIRecord, 'id' | 'status' | 'dateOnboarded' | 'financialData' | 'commentary'>) => string;
@@ -45,136 +44,128 @@ interface AppState {
 
 const AppContext = createContext<AppState | undefined>(undefined);
 
+// ---------------------------------------------------------------------------
+// Users (auth remains simple role selection — no passwords in this demo)
+// ---------------------------------------------------------------------------
 const USERS: Record<string, User> = {
-  analyst: { id: '1', name: 'Sarah Kimani', role: 'analyst', email: 'sarah.kimani@lender.co.ke' },
-  approver: { id: '2', name: 'James Ochieng', role: 'approver', email: 'james.ochieng@lender.co.ke' },
+  analyst:   { id: '1', name: 'Sarah Kimani',  role: 'analyst',   email: 'sarah.kimani@lender.co.ke' },
+  approver:  { id: '2', name: 'James Ochieng', role: 'approver',  email: 'james.ochieng@lender.co.ke' },
   nbfi_user: { id: '3', name: 'Alice Wanjiku', role: 'nbfi_user', email: 'alice.wanjiku@apexfinance.co.ke', nbfiId: 'seed-1' },
 };
 
-const NBFI_PROVISIONING: ProvisioningRule[] = [
-  { bucket: 'normal', dpdMin: 0, dpdMax: 30, provisionPercent: 1 },
-  { bucket: 'watch', dpdMin: 31, dpdMax: 60, provisionPercent: 5 },
-  { bucket: 'substandard', dpdMin: 61, dpdMax: 90, provisionPercent: 25 },
-  { bucket: 'doubtful', dpdMin: 91, dpdMax: 180, provisionPercent: 50 },
-  { bucket: 'loss', dpdMin: 181, dpdMax: 9999, provisionPercent: 100 },
-];
+// ---------------------------------------------------------------------------
+// Helper: fire-and-forget API call with optimistic update pattern
+// ---------------------------------------------------------------------------
+async function apiCall(url: string, method: string, body?: unknown): Promise<Response> {
+  return fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+}
 
-const LENDER_PROVISIONING: ProvisioningRule[] = [
-  { bucket: 'normal', dpdMin: 0, dpdMax: 30, provisionPercent: 1 },
-  { bucket: 'watch', dpdMin: 31, dpdMax: 60, provisionPercent: 10 },
-  { bucket: 'substandard', dpdMin: 61, dpdMax: 90, provisionPercent: 50 },
-  { bucket: 'doubtful', dpdMin: 91, dpdMax: 120, provisionPercent: 75 },
-  { bucket: 'loss', dpdMin: 121, dpdMax: 9999, provisionPercent: 100 },
-];
-
-const SEED_NBFIS: NBFIRecord[] = NBFI_SEEDS.map((s, idx) => {
-  const base: NBFIRecord = {
-    id: s.id,
-    name: s.name,
-    keyContacts: s.keyContacts,
-    fundingAmount: s.fundingAmount,
-    description: s.description,
-    status: s.status as NBFIStatus,
-    dateOnboarded: s.dateOnboarded,
-    commentary: idx === 0 ? [{ id: 'c1', author: 'Sarah Kimani', role: 'analyst', text: 'Strong financials with consistent growth. Recommend for approval.', timestamp: '2024-08-20T10:00:00Z' }] : [],
-    recommendation: idx === 0 ? 'Approved for KES 150M facility based on strong financial performance.' : undefined,
-    approverComments: idx === 0 ? 'Approved. Solid track record and adequate capital ratios.' : undefined,
-    provisioningRules: { nbfi: NBFI_PROVISIONING, lender: LENDER_PROVISIONING },
-  };
-  if (idx === 0) {
-    base.covenants = mockCovenantsData.definitions as CovenantDef[];
-    base.covenantReadings = mockCovenantsData.readings as CovenantReading[];
-    base.documents = mockDocumentsData as DocumentRequirement[];
-    base.earlyWarnings = mockEarlyWarningsData.alerts as EarlyWarningAlert[];
-    base.monitoringData = mockMonitoringData as unknown as MonitoringData;
-    base.setupCompleted = true;
-    base.loanBookMeta = { source: 'nbfi_portal', uploadedAt: '2025-11-15T09:30:00Z', uploadedBy: 'Alice Wanjiku', rowCount: 520, totalBalance: 892000000, filename: 'apex_finance_loanbook_Q4_2025.csv' };
-  }
-  if (s.status === 'monitoring' || s.status === 'setup_complete') {
-    base.setupCompleted = true;
-  }
-  return base;
-});
-
-const SEED_LOAN_BOOK: Record<string, LoanLevelRow[]> = getAllSeedLoanBooks();
-
-const SEED_POOL_SELECTION: Record<string, PoolSelectionState> = {
-  'seed-1': {
-    excludedSegments: ['MSME'],
-    filterSnapshot: {
-      loanAmountMin: 20000,
-      loanAmountMax: 500000,
-      geographies: ['Nairobi', 'Mombasa', 'Nakuru', 'Kisumu'],
-      products: ['Boda-Boda', 'Agri-Finance', 'Check-off', 'SACCO'],
-    },
-    confirmedAt: '2024-09-10T14:00:00Z',
-  },
-};
-
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [nbfis, setNbfis] = useState<NBFIRecord[]>(SEED_NBFIS);
-  const [loanBookData, setLoanBookDataState] = useState<Record<string, LoanLevelRow[]>>(SEED_LOAN_BOOK);
-  const [selectedPoolByNbfi, setSelectedPoolByNbfiState] = useState<Record<string, PoolSelectionState>>(SEED_POOL_SELECTION);
+  const [nbfis, setNbfis] = useState<NBFIRecord[]>([]);
+  const [loanBookData, setLoanBookDataState] = useState<Record<string, LoanLevelRow[]>>({});
+  const [selectedPoolByNbfi, setSelectedPoolByNbfiState] = useState<Record<string, PoolSelectionState>>({});
+  const [loading, setLoading] = useState(true);
 
+  // -------------------------------------------------------------------------
+  // Hydrate from API on mount (replaces localStorage read)
+  // -------------------------------------------------------------------------
   useEffect(() => {
-    const saved = localStorage.getItem('wl-demo-state');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.user) setUser(parsed.user);
-        if (parsed.nbfis?.length) setNbfis(parsed.nbfis);
-        if (parsed.loanBookData && typeof parsed.loanBookData === 'object') setLoanBookDataState(parsed.loanBookData);
-        if (parsed.selectedPoolByNbfi && typeof parsed.selectedPoolByNbfi === 'object') setSelectedPoolByNbfiState(parsed.selectedPoolByNbfi);
-      } catch { /* ignore */ }
-    }
+    // Restore session from localStorage (role only — no sensitive data)
+    const savedRole = localStorage.getItem('wl-user-role') as 'analyst' | 'approver' | 'nbfi_user' | null;
+    if (savedRole && USERS[savedRole]) setUser(USERS[savedRole]);
+
+    // Load all NBFI data from the database
+    fetch('/api/nbfis')
+      .then((r) => r.json())
+      .then((data) => {
+        setNbfis(data.nbfis || []);
+        setLoanBookDataState(data.loanBooks || {});
+        setSelectedPoolByNbfiState(data.poolSelections || {});
+      })
+      .catch((err) => console.error('Failed to hydrate from API:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('wl-demo-state', JSON.stringify({ user, nbfis, loanBookData, selectedPoolByNbfi }));
-  }, [user, nbfis, loanBookData, selectedPoolByNbfi]);
-
+  // -------------------------------------------------------------------------
+  // Auth (session persisted in localStorage — role only)
+  // -------------------------------------------------------------------------
   const login = useCallback((role: 'analyst' | 'approver' | 'nbfi_user') => {
-    setUser(USERS[role]);
+    const u = USERS[role];
+    setUser(u);
+    localStorage.setItem('wl-user-role', role);
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('wl-demo-state');
+    localStorage.removeItem('wl-user-role');
   }, []);
 
+  // -------------------------------------------------------------------------
+  // NBFI CRUD
+  // -------------------------------------------------------------------------
   const addNBFI = useCallback((data: Omit<NBFIRecord, 'id' | 'status' | 'dateOnboarded' | 'financialData' | 'commentary'>) => {
     const id = uuidv4();
-    const record: NBFIRecord = {
-      ...data,
-      id,
-      status: 'draft',
-      dateOnboarded: new Date().toISOString().split('T')[0],
-      commentary: [],
-    };
-    setNbfis(prev => [...prev, record]);
+    const dateOnboarded = new Date().toISOString().split('T')[0];
+
+    // Optimistic update
+    const record: NBFIRecord = { ...data, id, status: 'draft', dateOnboarded, commentary: [] };
+    setNbfis((prev) => [...prev, record]);
+
+    // Persist to DB
+    apiCall('/api/nbfis', 'POST', {
+      ...data, userId: user?.id, userName: user?.name,
+    }).then(async (res) => {
+      if (!res.ok) {
+        // Revert on failure
+        setNbfis((prev) => prev.filter((n) => n.id !== id));
+      }
+    });
+
     return id;
-  }, []);
+  }, [user]);
 
   const deleteNBFI = useCallback((id: string) => {
-    setNbfis(prev => prev.filter(n => n.id !== id));
+    setNbfis((prev) => prev.filter((n) => n.id !== id));
+    apiCall(`/api/nbfis/${id}`, 'DELETE');
   }, []);
 
   const updateNBFIStatus = useCallback((id: string, status: NBFIStatus) => {
-    setNbfis(prev => prev.map(n => n.id === id ? { ...n, status } : n));
-  }, []);
+    setNbfis((prev) => prev.map((n) => n.id === id ? { ...n, status } : n));
+    apiCall(`/api/nbfis/${id}/status`, 'PATCH', {
+      status,
+      userId: user?.id || 'system',
+      userName: user?.name || 'System',
+    });
+  }, [user]);
 
+  // -------------------------------------------------------------------------
+  // Financial data
+  // -------------------------------------------------------------------------
   const loadFinancialData = useCallback((id: string) => {
     const financialData: FinancialData = {
       inputTemplate: inputTemplateData as never,
       nbfiOutput: nbfiOutputData as never,
       cashFlow: cashflowData as never,
     };
-    setNbfis(prev => prev.map(n => n.id === id ? { ...n, financialData, status: 'spreading' } : n));
-  }, []);
+    setNbfis((prev) => prev.map((n) => n.id === id ? { ...n, financialData, status: 'spreading' } : n));
+
+    apiCall(`/api/nbfis/${id}/financial-data`, 'POST', {
+      financialData,
+      userId: user?.id,
+      userName: user?.name,
+    });
+  }, [user]);
 
   const updateFinancialValues = useCallback((id: string, _section: string, key: string, periodIndex: number, value: number) => {
-    setNbfis(prev => prev.map(n => {
+    setNbfis((prev) => prev.map((n) => {
       if (n.id !== id || !n.financialData) return n;
       const fd = JSON.parse(JSON.stringify(n.financialData));
       const searchSections = [
@@ -185,15 +176,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       for (const rows of searchSections) {
         const row = (rows as { key: string; values: (number | null)[] }[]).find((r) => r.key === key);
-        if (row) {
-          row.values[periodIndex] = value;
-          break;
-        }
+        if (row) { row.values[periodIndex] = value; break; }
       }
       return { ...n, financialData: fd };
     }));
+
+    // Persist the whole financialData blob (debounce-free for simplicity)
+    setNbfis((prev) => {
+      const n = prev.find((x) => x.id === id);
+      if (n?.financialData) {
+        apiCall(`/api/nbfis/${id}`, 'PATCH', { financialData: n.financialData });
+      }
+      return prev;
+    });
   }, []);
 
+  // -------------------------------------------------------------------------
+  // Commentary
+  // -------------------------------------------------------------------------
   const addCommentary = useCallback((id: string, text: string) => {
     if (!user) return;
     const entry: CommentaryEntry = {
@@ -203,45 +203,107 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       text,
       timestamp: new Date().toISOString(),
     };
-    setNbfis(prev => prev.map(n =>
+    setNbfis((prev) => prev.map((n) =>
       n.id === id ? { ...n, commentary: [...(n.commentary || []), entry] } : n
     ));
+    apiCall(`/api/nbfis/${id}/commentary`, 'POST', {
+      ...entry, userId: user.id,
+    });
   }, [user]);
 
   const setRecommendation = useCallback((id: string, text: string) => {
-    setNbfis(prev => prev.map(n =>
+    setNbfis((prev) => prev.map((n) =>
       n.id === id ? { ...n, recommendation: text, status: 'pending_review' } : n
     ));
-  }, []);
+    apiCall(`/api/nbfis/${id}/status`, 'PATCH', {
+      status: 'pending_review',
+      recommendation: text,
+      userId: user?.id,
+      userName: user?.name,
+      notes: 'Analyst submitted recommendation',
+    });
+  }, [user]);
 
   const setApproverComments = useCallback((id: string, text: string) => {
-    setNbfis(prev => prev.map(n =>
+    setNbfis((prev) => prev.map((n) =>
       n.id === id ? { ...n, approverComments: text } : n
     ));
-  }, []);
+    apiCall(`/api/nbfis/${id}/status`, 'PATCH', {
+      status: 'approved',
+      approverComments: text,
+      userId: user?.id,
+      userName: user?.name,
+      notes: 'Approver decision recorded',
+    });
+  }, [user]);
 
   const getNBFI = useCallback((id: string) => {
-    return nbfis.find(n => n.id === id);
+    return nbfis.find((n) => n.id === id);
   }, [nbfis]);
 
+  // -------------------------------------------------------------------------
+  // Loan book
+  // -------------------------------------------------------------------------
   const setLoanBookData = useCallback((nbfiId: string, rows: LoanLevelRow[]) => {
-    setLoanBookDataState(prev => ({ ...prev, [nbfiId]: rows }));
+    setLoanBookDataState((prev) => ({ ...prev, [nbfiId]: rows }));
+    apiCall(`/api/nbfis/${nbfiId}/loan-book`, 'POST', {
+      rows,
+      userId: user?.id,
+      userName: user?.name,
+    });
+  }, [user]);
+
+  const setLoanBookMeta = useCallback((id: string, meta: LoanBookUploadMeta) => {
+    setNbfis((prev) => prev.map((n) => n.id === id ? { ...n, loanBookMeta: meta } : n));
+    apiCall(`/api/nbfis/${id}`, 'PATCH', { loanBookMeta: meta });
   }, []);
 
+  // -------------------------------------------------------------------------
+  // Pool selection
+  // -------------------------------------------------------------------------
   const setPoolSelection = useCallback((nbfiId: string, state: PoolSelectionState) => {
-    setSelectedPoolByNbfiState(prev => ({ ...prev, [nbfiId]: state }));
-  }, []);
+    setSelectedPoolByNbfiState((prev) => ({ ...prev, [nbfiId]: state }));
+    apiCall(`/api/nbfis/${nbfiId}/pool-selection`, 'PUT', {
+      ...state,
+      userId: user?.id,
+      userName: user?.name,
+    });
+  }, [user]);
 
-  const saveCovenantSetup = useCallback((id: string, covenants: CovenantDef[], documents: DocumentRequirement[], provisioningRules: { nbfi: ProvisioningRule[]; lender: ProvisioningRule[] }) => {
-    setNbfis(prev => prev.map(n =>
+  // -------------------------------------------------------------------------
+  // Covenant setup
+  // -------------------------------------------------------------------------
+  const saveCovenantSetup = useCallback((
+    id: string,
+    covenants: CovenantDef[],
+    documents: DocumentRequirement[],
+    provisioningRules: { nbfi: ProvisioningRule[]; lender: ProvisioningRule[] }
+  ) => {
+    setNbfis((prev) => prev.map((n) =>
       n.id === id ? { ...n, covenants, documents, provisioningRules, setupCompleted: true, status: 'setup_complete' } : n
     ));
-  }, []);
+    apiCall(`/api/nbfis/${id}/covenant-setup`, 'PUT', {
+      covenants,
+      documents,
+      provisioningRules,
+      userId: user?.id,
+      userName: user?.name,
+    });
+  }, [user]);
 
-  const updateDocumentStatus = useCallback((id: string, docId: string, status: 'submitted' | 'pending' | 'overdue', date?: string, uploadedBy?: string) => {
-    setNbfis(prev => prev.map(n => {
+  // -------------------------------------------------------------------------
+  // Document management
+  // -------------------------------------------------------------------------
+  const updateDocumentStatus = useCallback((
+    id: string,
+    docId: string,
+    status: 'submitted' | 'pending' | 'overdue',
+    date?: string,
+    uploadedBy?: string
+  ) => {
+    setNbfis((prev) => prev.map((n) => {
       if (n.id !== id || !n.documents) return n;
-      const docs = n.documents.map(d => {
+      const docs = n.documents.map((d) => {
         if (d.id !== docId) return d;
         const updated = { ...d, status };
         if (status === 'submitted' && date) {
@@ -256,29 +318,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       return { ...n, documents: docs };
     }));
-  }, []);
 
-  const setLoanBookMeta = useCallback((id: string, meta: LoanBookUploadMeta) => {
-    setNbfis(prev => prev.map(n =>
-      n.id === id ? { ...n, loanBookMeta: meta } : n
-    ));
-  }, []);
+    apiCall(`/api/nbfis/${id}/documents/${docId}`, 'PATCH', {
+      status, date, uploadedBy, userId: user?.id, userName: user?.name,
+    });
+  }, [user]);
 
+  // -------------------------------------------------------------------------
+  // Transaction type & securitisation
+  // -------------------------------------------------------------------------
   const setTransactionType = useCallback((id: string, type: TransactionType) => {
-    setNbfis(prev => prev.map(n => n.id === id ? { ...n, transactionType: type } : n));
+    setNbfis((prev) => prev.map((n) => n.id === id ? { ...n, transactionType: type } : n));
+    apiCall(`/api/nbfis/${id}`, 'PATCH', { transactionType: type });
   }, []);
 
   const setSecuritisationStructure = useCallback((id: string, structure: SecuritisationStructure) => {
-    setNbfis(prev => prev.map(n => n.id === id ? { ...n, securitisationStructure: structure, transactionType: 'securitisation' } : n));
+    setNbfis((prev) => prev.map((n) =>
+      n.id === id ? { ...n, securitisationStructure: structure, transactionType: 'securitisation' } : n
+    ));
+    apiCall(`/api/nbfis/${id}`, 'PATCH', { securitisationStructure: structure, transactionType: 'securitisation' });
   }, []);
 
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
     <AppContext.Provider value={{
-      user, nbfis, login, logout, addNBFI, deleteNBFI, updateNBFIStatus,
+      user, nbfis, loading, login, logout,
+      addNBFI, deleteNBFI, updateNBFIStatus,
       loadFinancialData, updateFinancialValues,
       addCommentary, setRecommendation, setApproverComments, getNBFI,
-      loanBookData, setLoanBookData, selectedPoolByNbfi, setPoolSelection, setTransactionType, setSecuritisationStructure,
+      loanBookData, setLoanBookData,
+      selectedPoolByNbfi, setPoolSelection,
       saveCovenantSetup, updateDocumentStatus, setLoanBookMeta,
+      setTransactionType, setSecuritisationStructure,
     }}>
       {children}
     </AppContext.Provider>

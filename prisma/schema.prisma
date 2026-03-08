@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Nbfi {
+  id                      String   @id
+  name                    String
+  keyContacts             String
+  fundingAmount           Float
+  description             String
+  status                  String   @default("draft")
+  dateOnboarded           String
+  recommendation          String?
+  approverComments        String?
+  setupCompleted          Boolean  @default(false)
+  transactionType         String?
+  loanBookMeta            String?  // JSON
+  securitisationStructure String?  // JSON
+  monitoringData          String?  // JSON
+  earlyWarnings           String?  // JSON
+  financialData           String?  // JSON (InputTemplate + NBFIOutput + CashFlow)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  commentaries     Commentary[]
+  covenantDefs     CovenantDefinition[]
+  covenantReadings CovenantReading[]
+  documents        Document[]
+  provRules        ProvisioningRule[]
+  loanBooks        LoanBook[]
+  poolSelection    PoolSelection?
+  auditLog         AuditLog[]
+}
+
+model Commentary {
+  id        String   @id
+  nbfiId    String
+  author    String
+  role      String
+  text      String
+  timestamp String
+  nbfi      Nbfi     @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+}
+
+model CovenantDefinition {
+  id        String   @id
+  nbfiId    String
+  metric    String
+  operator  String
+  threshold Float
+  frequency String
+  format    String
+  nbfi      Nbfi     @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+  readings  CovenantReading[]
+}
+
+model CovenantReading {
+  id         String             @id
+  nbfiId     String
+  covenantId String
+  value      Float
+  date       String
+  status     String
+  nbfi       Nbfi               @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+  covenant   CovenantDefinition @relation(fields: [covenantId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id            String               @id
+  nbfiId        String
+  name          String
+  frequency     String
+  nextDueDate   String
+  status        String               @default("pending")
+  submittedDate String?
+  submittedBy   String?
+  nbfi          Nbfi                 @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+  submissions   DocumentSubmission[]
+}
+
+model DocumentSubmission {
+  id         String   @id @default(cuid())
+  documentId String
+  date       String
+  filename   String
+  uploadedBy String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model ProvisioningRule {
+  id               String  @id @default(cuid())
+  nbfiId           String
+  policyType       String  // 'nbfi' | 'lender'
+  bucket           String
+  dpdMin           Int
+  dpdMax           Int
+  provisionPercent Float
+  nbfi             Nbfi    @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+}
+
+model LoanBook {
+  id         String   @id @default(cuid())
+  nbfiId     String
+  uploadedAt DateTime @default(now())
+  rows       String   // JSON: LoanLevelRow[]
+  nbfi       Nbfi     @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+
+  @@index([nbfiId])
+}
+
+model PoolSelection {
+  id               String  @id @default(cuid())
+  nbfiId           String  @unique
+  excludedSegments String  // JSON: string[]
+  filterSnapshot   String  // JSON: FilterSnapshot
+  confirmedAt      String?
+  nbfi             Nbfi    @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  nbfiId     String
+  userId     String
+  userName   String
+  action     String   // 'status_change' | 'commentary_added' | 'approved' | 'rejected' | 'covenant_setup' | 'loan_book_uploaded' | 'pool_confirmed'
+  fromStatus String?
+  toStatus   String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  nbfi       Nbfi     @relation(fields: [nbfiId], references: [id], onDelete: Cascade)
+}
