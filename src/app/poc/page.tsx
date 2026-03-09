@@ -193,7 +193,7 @@ export default function POCPage() {
               },
               {
                 step: '04', icon: Users, title: 'Expert Review',
-                desc: 'A Kaleidofin analyst reviews all outputs, adds qualitative context, and prepares the final credit note.',
+                desc: 'A Kaleidofin analyst reviews all engine outputs, interprets the loan tape findings in the context of sector dynamics and originator-specific risk factors, and distils everything into a concise executive summary with a clear recommendation.',
                 top: 'border-t-2 border-t-teal-500', bg: 'bg-white',
               },
               {
