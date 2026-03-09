@@ -188,12 +188,12 @@ export default function POCPage() {
               },
               {
                 step: '03', icon: Zap, title: 'Automated Analysis',
-                desc: 'The engine runs overnight — generating DPD analysis, vintage curves, ECL estimates, CAMEL-based financial ratios, and cross-source validation.',
+                desc: 'The engine generates DPD analysis, vintage curves, ECL estimates, and CAMEL-based financial ratios — then reconciles loan tape, MIS, and financials to flag any discrepancies.',
                 top: 'border-t-2 border-t-amber-500', bg: 'bg-white',
               },
               {
                 step: '04', icon: Users, title: 'Expert Review',
-                desc: 'A Kaleidofin analyst reviews all engine outputs, interprets the loan tape findings in the context of sector dynamics and originator-specific risk factors, and distils everything into a concise executive summary with a clear recommendation.',
+                desc: 'A Kaleidofin analyst interprets the cross-source findings, adds sector and risk context, and distils it into a concise executive summary with a clear recommendation.',
                 top: 'border-t-2 border-t-teal-500', bg: 'bg-white',
               },
               {
