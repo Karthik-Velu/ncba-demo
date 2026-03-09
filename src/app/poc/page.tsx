@@ -27,7 +27,7 @@ export default function POCPage() {
           <div className="hidden md:flex items-center gap-6 text-xs text-slate-500">
             <a href="#how-it-works" className="hover:text-teal-700 transition-colors">How It Works</a>
             <a href="#ki-score" className="hover:text-teal-700 transition-colors">ki score</a>
-            <a href="#rationale" className="hover:text-teal-700 transition-colors">Why POC</a>
+            <a href="#rationale" className="hover:text-teal-700 transition-colors">Why a Validation Run</a>
             <a href="#vision" className="hover:text-teal-700 transition-colors">What&apos;s Next</a>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 text-slate-500 text-xs px-3 py-1.5 rounded font-medium">
@@ -48,16 +48,17 @@ export default function POCPage() {
             <div>
               <div className="inline-flex items-center gap-2 bg-teal-600/20 border border-teal-500/30 text-teal-300 text-xs px-3 py-1.5 rounded mb-5">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                Proof of Concept Proposal · NCBA Wholesale Lending
+                Validation Run Proposal · NCBA Wholesale Lending
               </div>
               <h1 className="text-2xl md:text-[2.1rem] font-bold leading-tight mb-4">
                 Credit Intelligence for NBFI Wholesale Lending —{' '}
                 <span className="text-teal-400">From Raw Data to Decision in T+4 Business Days</span>
               </h1>
               <p className="text-slate-300 text-sm max-w-xl mb-6 leading-relaxed">
-                Kaleidofin automates the most time-consuming parts of NBFI credit assessment — loan tape analysis,
-                financial spreading, MIS review, and cross-source validation — so your decision makers receive
-                a concise, expert-reviewed credit note, not a stack of spreadsheets.
+                Kaleidofin's ML-powered engine fully automates loan tape analytics and ECL calculation — processing
+                12+ months of loan-level data without any manual intervention. Analysts focus on interpretation
+                and judgement, not computation. Your decision makers receive a concise, expert-reviewed credit note
+                in T+4, not a stack of spreadsheets.
               </p>
               <div className="flex items-center gap-2">
                 {[
@@ -80,7 +81,7 @@ export default function POCPage() {
                 {[
                   {
                     step: '01',
-                    title: 'Nominate a pilot originator',
+                    title: 'Nominate an originator',
                     desc: 'NCBA selects one originator from its existing wholesale lending portfolio.',
                   },
                   {
@@ -128,7 +129,7 @@ export default function POCPage() {
                 accent: 'border-t-2 border-t-blue-500',
                 iconBg: 'bg-blue-50 text-blue-700',
                 title: 'Loan Tape Analytics',
-                body: 'DPD buckets, vintage curves, roll rates, and ECL estimated automatically — overnight — from 12+ months of loan-level data.',
+                body: 'ML models compute DPD cohorts, vintage curves, roll-rate matrices, and ECL — fully automatically. No analyst touches a spreadsheet. Results are ready for expert review.',
               },
               {
                 icon: FileSpreadsheet,
@@ -168,7 +169,7 @@ export default function POCPage() {
       <section id="how-it-works" className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-14">
           <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">How the POC Works</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">How the Validation Run Works</h2>
             <p className="text-slate-500 text-sm max-w-xl mx-auto">
               Kaleidofin onboards <strong>one originator</strong> and builds a custom data mapping layer for that
               originator&apos;s exact formats — ensuring the pipeline matches real-world data from day one.
@@ -188,7 +189,7 @@ export default function POCPage() {
               },
               {
                 step: '03', icon: Zap, title: 'Automated Analysis',
-                desc: 'The engine generates DPD analysis, vintage curves, ECL estimates, and CAMEL-based financial ratios — then reconciles loan tape, MIS, and financials to flag any discrepancies.',
+                desc: 'ML models process the loan tape — computing DPD cohorts, vintage curves, roll-rate matrices, and ECL estimates — fully automatically, with zero manual computation. The engine simultaneously reconciles all three data sources and flags discrepancies before the analyst sees a single number.',
                 top: 'border-t-2 border-t-amber-500', bg: 'bg-white',
               },
               {
@@ -219,9 +220,25 @@ export default function POCPage() {
               </React.Fragment>
             ))}
           </div>
-          <div className="mt-6 bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-600 text-center shadow-sm">
+          <div className="mt-6 bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-9 h-9 bg-teal-600/20 border border-teal-500/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Zap className="w-4 h-4 text-teal-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-white text-sm mb-1.5">Why T+4 is possible — not a compromise, but a design choice</h4>
+                <p className="text-slate-300 text-xs leading-relaxed">
+                  Loan tape analytics and ECL calculation are fully automated. ML models process 12+ months of loan-level data —
+                  computing DPD cohorts, vintage curves, roll-rate matrices, and ECL estimates — without any analyst touching the numbers.
+                  Analysts spend their time doing what humans are better at: interpreting results, applying sector context, and distilling
+                  findings into a clear credit recommendation. <span className="text-teal-300 font-medium">Automation handles the computation. Experts handle the judgement.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-600 text-center shadow-sm">
             <Clock className="w-4 h-4 inline-block mr-2 text-teal-600" />
-            <strong>Committed TAT:</strong> T+4 business days from complete data submission to final credit note delivered to NCBA.
+            <strong>Committed TAT: T+4 business days</strong> — made possible because loan tape analytics and ECL calculation run fully automatically in the background. Analysts focus on interpretation and judgement, not computation.
           </div>
         </div>
       </section>
@@ -246,7 +263,7 @@ export default function POCPage() {
                 title: 'Loan Tape',
                 tag: '12+ months performance data — required',
                 tagColor: 'text-blue-600',
-                desc: 'Full loan-level snapshot powering all quantitative credit analysis.',
+                desc: 'Full loan-level snapshot — processed entirely by ML models. Every metric below is machine-computed, including ECL estimation.',
                 chevron: 'text-blue-400',
                 items: ['DPD bucket distribution & PAR trends', 'Vintage analysis & cohort performance', 'Roll-rate (migration) matrix', 'ECL & estimated loss modelling', 'Write-off, recovery & repossession rates', 'Geography, product & segment breakdown'],
               },
@@ -416,11 +433,11 @@ export default function POCPage() {
       <section id="rationale" className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-14">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Why Start with a POC?</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Why Start with a Validation Run?</h2>
             <p className="text-slate-500 text-sm max-w-2xl mx-auto">
-              The analytically hard part is the engine — loan tape analytics, CAMEL-based financial spreading,
-              and the structured credit note framework. Proving it works with real originator data is the right
-              first step; a workflow UI follows once NCBA has confidence in analysis quality and TAT.
+              The core of what Kaleidofin offers is a fully automated ML engine — loan tape analytics and ECL estimation
+              run without any manual intervention. The Validation Run proves this engine works end-to-end on real
+              originator data before any further investment is required.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -429,19 +446,19 @@ export default function POCPage() {
                 icon: CheckCircle2,
                 accent: 'border-t-2 border-t-teal-500',
                 title: 'Validate What Actually Matters',
-                body: 'The two core promises are better quality of analysis than today\'s manual process and a materially faster TAT. The POC tests exactly these — with real originator data — before any further investment is required.',
+                body: 'The two core promises are better quality of analysis than today\'s manual process and a materially faster TAT. The Validation Run tests exactly these — with real originator data — before any further investment is required.',
               },
               {
                 icon: Zap,
                 accent: 'border-t-2 border-t-blue-500',
                 title: 'Zero Disruption to Existing Processes',
-                body: 'The POC uses existing SFTP infrastructure — no new systems, no integration work, no procurement process on NCBA\'s side. Simply share the required files and Kaleidofin handles the rest.',
+                body: 'The Validation Run uses existing SFTP infrastructure — no new systems, no integration work, no procurement process on NCBA\'s side. Simply share the required files and Kaleidofin handles the rest.',
               },
               {
                 icon: Layers,
                 accent: 'border-t-2 border-t-violet-500',
                 title: 'A Foundation, Not a Throwaway',
-                body: 'Every format mapping, validation rule, and model built during the POC feeds directly into the full platform — the pilot is the foundation, not a detour.',
+                body: 'Every format mapping, validation rule, and model built during the Validation Run feeds directly into the full platform — it is the foundation, not a detour.',
               },
             ].map(({ icon: Icon, accent, title, body }) => (
               <div key={title} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm ${accent}`}>
@@ -460,12 +477,12 @@ export default function POCPage() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-700 text-xs px-3 py-1.5 rounded mb-4 font-medium">
               <ArrowRight className="w-3.5 h-3.5" />
-              After a successful POC
+              After a successful Validation Run
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">What&apos;s Next — The Full Platform</h2>
             <p className="text-slate-500 text-sm max-w-xl mx-auto">
-              Every format mapping, validation rule, and analytical model built during the pilot feeds directly
-              into the full platform. The step from POC to full deployment is a natural extension, not a separate project.
+              Every format mapping, validation rule, and analytical model built during the Validation Run feeds directly
+              into the full platform. The step from Validation Run to full deployment is a natural extension, not a separate project.
             </p>
           </div>
 
@@ -536,13 +553,13 @@ export default function POCPage() {
                   <h3 className="font-bold text-slate-800 text-base">The Expert Model Stays — Always</h3>
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed mb-5">
-                  Whether for the POC or the full platform, Kaleidofin operates as a
+                  Whether for the Validation Run or the full platform, Kaleidofin operates as a
                   <strong className="text-slate-700"> credit intelligence partnership</strong> — not a black-box tool.
                   The process below applies every time.
                 </p>
                 <div className="space-y-3">
                   {[
-                    { icon: Zap, label: 'Automated analysis runs first', sub: 'Engine processes loan tape, financials, and MIS overnight' },
+                    { icon: Zap, label: 'Automated analysis runs first', sub: 'ML models compute all loan tape analytics and ECL estimates fully automatically — no manual input' },
                     { icon: Users, label: 'Kaleidofin expert reviews all outputs', sub: 'Analyst validates, adds qualitative context, and signs off' },
                     { icon: CheckCircle2, label: 'Final credit note delivered to NCBA', sub: 'Structured, quality-assured, and ready for credit committee' },
                   ].map(({ icon: Icon, label, sub }) => (
