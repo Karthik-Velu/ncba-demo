@@ -149,7 +149,7 @@ export default function POCPage() {
                 accent: 'border-t-2 border-t-teal-500',
                 iconBg: 'bg-teal-50 text-teal-700',
                 title: 'Expert-Reviewed Credit Note',
-                body: 'Every output is reviewed by a Kaleidofin credit analyst before delivery to NCBA — structured for immediate decision.',
+                body: 'Every output is reviewed by a Kaleidofin credit analyst before delivery to NCBA.',
               },
             ].map(({ icon: Icon, accent, iconBg, title, body }) => (
               <div key={title} className={`bg-white border border-slate-200 rounded-xl p-5 shadow-sm ${accent}`}>
@@ -322,10 +322,10 @@ export default function POCPage() {
       <section id="ki-score" className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-14">
           <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">The Output: ki score of Kaleidofin</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">The Output: Kaleidofin&apos;s ki score</h2>
             <p className="text-slate-500 text-sm max-w-xl mx-auto">
               Every application culminates in one concise, expert-reviewed credit note — structured for
-              credit committee, not for further processing.
+              an immediate credit committee decision.
             </p>
           </div>
 
@@ -418,10 +418,9 @@ export default function POCPage() {
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Why Start with a POC?</h2>
             <p className="text-slate-500 text-sm max-w-2xl mx-auto">
-              The Kaleidofin engine — loan tape analytics, CAMEL-based financial spreading, and the structured
-              credit note framework — is the analytically complex part to build. Proving it works with real originator
-              data is the right first step. A workflow UI can be layered on top once NCBA has confidence in the
-              quality of analysis and the improvement in TAT.
+              The analytically hard part is the engine — loan tape analytics, CAMEL-based financial spreading,
+              and the structured credit note framework. Proving it works with real originator data is the right
+              first step; a workflow UI follows once NCBA has confidence in analysis quality and TAT.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -442,7 +441,7 @@ export default function POCPage() {
                 icon: Layers,
                 accent: 'border-t-2 border-t-violet-500',
                 title: 'A Foundation, Not a Throwaway',
-                body: 'Every format mapping, validation rule, and model built during the POC feeds directly into the full platform. The step from pilot to full deployment is a natural extension, not a separate project.',
+                body: 'Every format mapping, validation rule, and model built during the POC feeds directly into the full platform — the pilot is the foundation, not a detour.',
               },
             ].map(({ icon: Icon, accent, title, body }) => (
               <div key={title} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm ${accent}`}>
@@ -514,7 +513,7 @@ export default function POCPage() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Integration & Reporting</p>
                   <ul className="space-y-2">
                     {[
-                      "NCBA's financial spreading tools integrated into the overall workflow in a seamless manner",
+                      "NCBA's financial spreading tools integrated seamlessly into the workflow",
                       'SFTP and API ingestion for ongoing loan tape submissions',
                       'Audit trail and compliance logging across all originators',
                     ].map(item => (
@@ -537,9 +536,9 @@ export default function POCPage() {
                   <h3 className="font-bold text-slate-800 text-base">The Expert Model Stays — Always</h3>
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed mb-5">
-                  Whether for the POC or the full platform, Kaleidofin&apos;s model is a
+                  Whether for the POC or the full platform, Kaleidofin operates as a
                   <strong className="text-slate-700"> credit intelligence partnership</strong> — not a black-box tool.
-                  Every analysis is reviewed by a Kaleidofin credit expert before it reaches NCBA.
+                  The process below applies every time.
                 </p>
                 <div className="space-y-3">
                   {[
