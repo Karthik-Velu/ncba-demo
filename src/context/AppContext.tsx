@@ -8,7 +8,7 @@ import {
   MonitoringData, LoanBookUploadMeta, TransactionType, SecuritisationStructure,
 } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { NBFI_SEEDS, getAllSeedLoanBooks, SEED_VERSION, TRANSACTION_MAP } from '@/lib/seedTransactions';
+import { NBFI_SEEDS, getAllSeedLoanBooks } from '@/lib/seedTransactions';
 
 import inputTemplateData from '../../data/input-template.json';
 import nbfiOutputData from '../../data/nbfi-output.json';
@@ -108,7 +108,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setLoanBookData = useCallback((nbfiId: string, rows: LoanLevelRow[]) => {
     setLoanBookDataState((prev) => {
       const next = { ...prev, [nbfiId]: rows };
-      lsSet(LS_LOAN_BOOK, next);
+      // Only persist user-uploaded (non-seed) loan books to avoid localStorage quota issues
+      if (!nbfiId.startsWith('seed-')) {
+        const userOnly: Record<string, LoanLevelRow[]> = {};
+        for (const [k, v] of Object.entries(next)) {
+          if (!k.startsWith('seed-')) userOnly[k] = v;
+        }
+        lsSet(LS_LOAN_BOOK, userOnly);
+      }
       return next;
     });
     apiCall(`/api/nbfis/${nbfiId}/loan-book`, 'POST', { rows });
@@ -129,9 +136,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedRole = localStorage.getItem(LS_ROLE) as 'analyst' | 'approver' | 'nbfi_user' | null;
     if (savedRole && USERS[savedRole]) setUser(USERS[savedRole]);
 
-    let savedNbfis     = lsGet<NBFIRecord[]>(LS_NBFIS, []);
-    let savedLoanBooks = lsGet<Record<string, LoanLevelRow[]>>(LS_LOAN_BOOK, {});
-    const savedPools   = lsGet<Record<string, PoolSelectionState>>(LS_POOL_SEL, {});
+    let savedNbfis = lsGet<NBFIRecord[]>(LS_NBFIS, []);
+    const savedPools = lsGet<Record<string, PoolSelectionState>>(LS_POOL_SEL, {});
 
     // Bootstrap seed data on first load (empty localStorage)
     if (savedNbfis.length === 0) {
@@ -148,21 +154,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lsSet(LS_NBFIS, savedNbfis);
     }
 
-    // Always ensure all seed transactions are present; force refresh when SEED_VERSION changes.
-    // Preserves user-uploaded data (UUID keys) while hydrating all seed transaction keys.
-    const savedSeedVersion = localStorage.getItem('wl-seed-version');
-    const allSeedTxIds = Object.values(TRANSACTION_MAP).flat();
-    const seedBooks = getAllSeedLoanBooks();
-    const needsReseed = savedSeedVersion !== SEED_VERSION ||
-      allSeedTxIds.some(txId => !savedLoanBooks[txId]);
-    if (needsReseed) {
-      savedLoanBooks = { ...savedLoanBooks, ...seedBooks };
-      lsSet(LS_LOAN_BOOK, savedLoanBooks);
-      localStorage.setItem('wl-seed-version', SEED_VERSION);
+    // Seed loan books are always generated in memory (never persisted to localStorage).
+    // Only user-uploaded loans (non-seed keys) are read from and written to localStorage.
+    // This avoids the 5MB localStorage quota being exceeded by ~62K seed loans.
+    const persistedUserBooks = lsGet<Record<string, LoanLevelRow[]>>(LS_LOAN_BOOK, {});
+    const userBooks: Record<string, LoanLevelRow[]> = {};
+    for (const [k, v] of Object.entries(persistedUserBooks)) {
+      if (!k.startsWith('seed-')) userBooks[k] = v;
     }
+    const allLoanBooks = { ...getAllSeedLoanBooks(), ...userBooks };
 
     setNbfisState(savedNbfis);
-    setLoanBookDataState(savedLoanBooks);
+    setLoanBookDataState(allLoanBooks);
     setSelectedPoolByNbfiState(savedPools);
     setLoading(false);
   }, []);
