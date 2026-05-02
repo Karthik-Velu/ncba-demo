@@ -4,17 +4,24 @@ import { useState, useMemo, type ReactNode } from 'react';
 import type { LoanLevelRow } from '@/lib/types';
 import {
   computeClimateMetrics,
+  computeClimatePositiveBreakdown,
+  computeClimateResilientBreakdown,
+  computeClimateVulnerableBreakdown,
   computeClimateEWI,
+  computeClimateGeoRecommendations,
   computeSocioeconomicMetrics,
   CLIMATE_RISK_ZONES,
   CO2E_FACTORS,
+  CLIMATE_PRODUCT_LABELS,
   CLIMATE_BASELINE_TRAJECTORY,
   KES_TO_USD,
   type ClimateEWI,
+  type ClimateGeoRecommendation,
 } from '@/lib/climateImpact';
 import {
   Leaf, Zap, Shield, Users, MapPin, AlertTriangle, CheckCircle,
-  ChevronDown, ChevronUp, Info, Heart, Briefcase, TreePine, Globe,
+  ChevronDown, ChevronUp, Info, Heart, Briefcase, Globe,
+  Sun, Truck, Droplets, TrendingDown, TrendingUp, Sprout, Building2,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -39,14 +46,17 @@ const CLIMATE_COLORS = {
   unclassified: '#d1d5db',
 };
 
-// ---- sub-components ----
+const PRODUCT_ICONS: Record<string, ReactNode> = {
+  'Boda-Boda':  <Zap className="w-3.5 h-3.5 text-green-600" />,
+  'EV':         <Truck className="w-3.5 h-3.5 text-emerald-600" />,
+  'Solar-Home': <Sun className="w-3.5 h-3.5 text-yellow-600" />,
+  'Solar-Pump': <Droplets className="w-3.5 h-3.5 text-blue-600" />,
+};
 
+// ---- sub-components ----
 function ImpactKpiCard({
   label, value, sub, icon, accent,
-}: {
-  label: string; value: string; sub?: string;
-  icon: ReactNode; accent: string;
-}) {
+}: { label: string; value: string; sub?: string; icon: ReactNode; accent: string }) {
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 ${accent} p-4`}>
       <div className="flex items-center gap-2 mb-2">{icon}</div>
@@ -61,11 +71,8 @@ function InfoBar({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[10px] text-blue-600 hover:text-blue-800 font-medium"
-      >
+      <button type="button" onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[10px] text-blue-600 hover:text-blue-800 font-medium">
         <Info className="w-3 h-3" />
         Methodology & assumptions
         {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -82,26 +89,10 @@ function InfoBar({ children }: { children: React.ReactNode }) {
 function EwiCard({ ewi }: { ewi: ClimateEWI }) {
   const [expanded, setExpanded] = useState(false);
   const theme = {
-    ok: {
-      bg: 'bg-green-50', border: 'border-green-200',
-      badge: 'bg-green-100 text-green-700',
-      icon: <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />,
-      label: 'On Track',
-    },
-    watch: {
-      bg: 'bg-amber-50', border: 'border-amber-200',
-      badge: 'bg-amber-100 text-amber-700',
-      icon: <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />,
-      label: 'Watch',
-    },
-    alert: {
-      bg: 'bg-red-50', border: 'border-red-200',
-      badge: 'bg-red-100 text-red-700',
-      icon: <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />,
-      label: 'Alert',
-    },
+    ok:    { bg: 'bg-green-50', border: 'border-green-200', badge: 'bg-green-100 text-green-700',  icon: <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />,  label: 'On Track' },
+    watch: { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700',  icon: <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />, label: 'Watch' },
+    alert: { bg: 'bg-red-50',   border: 'border-red-200',   badge: 'bg-red-100 text-red-700',      icon: <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />,   label: 'Alert' },
   }[ewi.status];
-
   return (
     <div className={`rounded-lg border p-3 ${theme.bg} ${theme.border}`}>
       <div className="flex items-start gap-2">
@@ -111,54 +102,66 @@ function EwiCard({ ewi }: { ewi: ClimateEWI }) {
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <p className="text-xs font-semibold text-gray-800">{ewi.label}</p>
-                {ewi.isSimulated && (
-                  <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium tracking-wide">
-                    SIMULATED
-                  </span>
-                )}
+                {ewi.isSimulated && <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium tracking-wide">SIMULATED</span>}
               </div>
               <p className="text-[10px] text-gray-500 mt-0.5">{ewi.description}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${theme.badge}`}>{ewi.value}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${theme.badge}`}>
-                {theme.label}
-              </span>
-              <button
-                type="button"
-                onClick={() => setExpanded(!expanded)}
-                className="text-gray-400 hover:text-gray-600 ml-1"
-              >
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${theme.badge}`}>{theme.label}</span>
+              <button type="button" onClick={() => setExpanded(!expanded)} className="text-gray-400 hover:text-gray-600 ml-1">
                 {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>
-          {expanded && (
-            <p className="text-[10px] text-gray-600 mt-2 pt-2 border-t border-gray-200 leading-relaxed">
-              {ewi.detail}
-            </p>
-          )}
+          {expanded && <p className="text-[10px] text-gray-600 mt-2 pt-2 border-t border-gray-200 leading-relaxed">{ewi.detail}</p>}
         </div>
       </div>
     </div>
   );
 }
 
-function CategoryBadge({ category }: { category: string }) {
-  const styles: Record<string, string> = {
-    positive: 'bg-green-100 text-green-700',
-    resilient: 'bg-blue-100 text-blue-700',
-    vulnerable: 'bg-amber-100 text-amber-700',
-  };
-  const labels: Record<string, string> = {
-    positive: 'Climate Positive',
-    resilient: 'Climate Resilient',
-    vulnerable: 'Climate Vulnerable',
-  };
+function GeoRecCard({ rec, currency }: { rec: ClimateGeoRecommendation; currency: 'KES' | 'USD' }) {
+  const [expanded, setExpanded] = useState(false);
+  const actionStyles = {
+    moratorium:           { badge: 'bg-red-100 text-red-700',    label: 'MORATORIUM',           border: 'border-red-200',   bg: 'bg-red-50' },
+    restructure:          { badge: 'bg-orange-100 text-orange-700', label: 'RESTRUCTURE',        border: 'border-orange-200', bg: 'bg-orange-50' },
+    watchlist:            { badge: 'bg-amber-100 text-amber-700', label: 'WATCHLIST',            border: 'border-amber-200', bg: 'bg-amber-50' },
+    enhanced_monitoring:  { badge: 'bg-blue-100 text-blue-700',   label: 'ENHANCED MONITORING', border: 'border-blue-200',  bg: 'bg-blue-50' },
+  }[rec.actionType];
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles[category] ?? 'bg-gray-100 text-gray-500'}`}>
-      {labels[category] ?? category}
-    </span>
+    <div className={`rounded-lg border p-3 ${actionStyles.bg} ${actionStyles.border}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <MapPin className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+            <span className="text-xs font-bold text-gray-800">{rec.geo}</span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
+              rec.riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+            }`}>{rec.riskLevel} climate risk</span>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${actionStyles.badge}`}>
+              {actionStyles.label}
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-600 mb-1.5">{rec.upcomingRisk}</p>
+          <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
+            <span>{rec.affectedLoans.toLocaleString()} loans ({pct(rec.exposurePct)} of portfolio)</span>
+            <span>Balance: {fmtNum(rec.exposureBalance, currency)}</span>
+            <span className={rec.par30 > 10 ? 'text-red-600 font-semibold' : ''}>PAR 30+: {pct(rec.par30)}</span>
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1 font-medium">{rec.season}</p>
+        </div>
+        <button type="button" onClick={() => setExpanded(!expanded)} className="text-gray-400 hover:text-gray-600 shrink-0 mt-0.5">
+          {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+      {expanded && (
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <p className="text-[10px] font-semibold text-gray-700 mb-1">Recommended Action:</p>
+          <p className="text-[10px] text-gray-600 leading-relaxed">{rec.recommendedAction}</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -172,45 +175,37 @@ interface ImpactDashboardProps {
 export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashboardProps) {
   const [currency, setCurrency] = useState<'KES' | 'USD'>('KES');
 
-  const climate = useMemo(() => computeClimateMetrics(loans), [loans]);
-  const ewi = useMemo(() => computeClimateEWI(loans), [loans]);
-  const socio = useMemo(() => computeSocioeconomicMetrics(loans), [loans]);
+  const climate       = useMemo(() => computeClimateMetrics(loans), [loans]);
+  const posBreakdown  = useMemo(() => computeClimatePositiveBreakdown(loans), [loans]);
+  const resBreakdown  = useMemo(() => computeClimateResilientBreakdown(loans), [loans]);
+  const vulBreakdown  = useMemo(() => computeClimateVulnerableBreakdown(loans), [loans]);
+  const ewi           = useMemo(() => computeClimateEWI(loans), [loans]);
+  const geoRecs       = useMemo(() => computeClimateGeoRecommendations(loans), [loans]);
+  const socio         = useMemo(() => computeSocioeconomicMetrics(loans), [loans]);
 
   const activeAlerts = ewi.filter(e => e.status !== 'ok').length;
+  const highRiskRecs = geoRecs.filter(r => r.riskLevel === 'high').length;
 
-  // Donut chart data
   const climatePieData = [
-    { name: 'Climate Positive', value: climate.positiveCount, color: CLIMATE_COLORS.positive },
-    { name: 'Climate Resilient', value: climate.resilientCount, color: CLIMATE_COLORS.resilient },
+    { name: 'Climate Positive', value: climate.positiveCount,    color: CLIMATE_COLORS.positive },
+    { name: 'Climate Resilient', value: climate.resilientCount,  color: CLIMATE_COLORS.resilient },
     { name: 'Climate Vulnerable', value: climate.vulnerableCount, color: CLIMATE_COLORS.vulnerable },
-    { name: 'Unclassified', value: climate.unclassifiedCount, color: CLIMATE_COLORS.unclassified },
+    { name: 'Unclassified', value: climate.unclassifiedCount,    color: CLIMATE_COLORS.unclassified },
   ].filter(d => d.value > 0);
 
   const climateBalanceData = [
-    { name: 'Climate +ve', value: climate.positiveBalance, color: CLIMATE_COLORS.positive },
-    { name: 'Climate Resilient', value: climate.resilientBalance, color: CLIMATE_COLORS.resilient },
-    { name: 'Climate Vulnerable', value: climate.vulnerableBalance, color: CLIMATE_COLORS.vulnerable },
+    { name: 'Climate +ve', value: climate.positiveBalance,   color: CLIMATE_COLORS.positive },
+    { name: 'Resilient',   value: climate.resilientBalance,  color: CLIMATE_COLORS.resilient },
+    { name: 'Vulnerable',  value: climate.vulnerableBalance, color: CLIMATE_COLORS.vulnerable },
   ].filter(d => d.value > 0);
 
-  // Urban/rural distribution for chart
-  const geoDistData = [
-    { name: 'Urban', value: socio.urbanBorrowers },
-    { name: 'Peri-Urban', value: socio.periUrbanBorrowers },
-    { name: 'Rural', value: socio.ruralBorrowers },
-  ];
-
   if (loans.length === 0) {
-    return (
-      <div className="text-center py-20 text-gray-400">
-        No loan data available. Upload a loan book to see impact analytics.
-      </div>
-    );
+    return <div className="text-center py-20 text-gray-400">No loan data available. Upload a loan book to see impact analytics.</div>;
   }
 
   return (
-    <div className="space-y-6">
-
-      {/* Header row */}
+    <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-bold text-gray-800">Impact Dashboard</h2>
@@ -218,92 +213,40 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
             {scope === 'portfolio' ? 'Full Portfolio' : nbfiName} — Climate & Socioeconomic Monitoring
           </p>
         </div>
-        {/* Currency toggle */}
         <div className="flex bg-gray-100 p-1 rounded-lg">
           {(['KES', 'USD'] as const).map(c => (
-            <button
-              key={c}
-              onClick={() => setCurrency(c)}
+            <button key={c} onClick={() => setCurrency(c)}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                 currency === c ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {c}
-            </button>
+              }`}>{c}</button>
           ))}
         </div>
       </div>
 
       {/* ================================================================
-          SECTION 1 — CLIMATE IMPACT
+          OVERVIEW — Portfolio Climate Snapshot
           ================================================================ */}
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Leaf className="w-4 h-4 text-green-600" />
-          <h3 className="text-sm font-bold text-gray-800">Climate Impact</h3>
-          <span className="text-[10px] text-gray-400 font-medium ml-1">
-            Kaleidofin Africa Climate Taxonomy · MDB/IDFC Common Principles basis
-          </span>
+          <h3 className="text-sm font-bold text-gray-800">Climate Impact Overview</h3>
+          <span className="text-[10px] text-gray-400 font-medium ml-1">Kaleidofin Africa Climate Taxonomy · MDB/IDFC Common Principles</span>
         </div>
-
-        {/* Climate KPI cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-          <ImpactKpiCard
-            label="Climate Finance Share"
-            value={pct(climate.climatePositiveSharePct)}
-            sub="Climate Positive (Common Principles)"
-            icon={<Zap className="w-4 h-4 text-green-600" />}
-            accent="border-l-green-400"
-          />
-          <ImpactKpiCard
-            label="Total Climate Lending"
-            value={fmtNum(climate.totalClimateBalance, currency)}
-            sub={`${pct(climate.totalClimateSharePct)} of portfolio`}
-            icon={<Leaf className="w-4 h-4 text-emerald-600" />}
-            accent="border-l-emerald-400"
-          />
-          <ImpactKpiCard
-            label="Agri-Households Reached"
-            value={climate.agriHouseholdCount.toLocaleString()}
-            sub="Climate Resilient credit"
-            icon={<TreePine className="w-4 h-4 text-teal-600" />}
-            accent="border-l-teal-400"
-          />
-          <ImpactKpiCard
-            label="Climate-Vulnerable Borrowers"
-            value={climate.climateVulnerableCount.toLocaleString()}
-            sub={`${pct((climate.climateVulnerableCount / climate.total) * 100)} of portfolio`}
-            icon={<Shield className="w-4 h-4 text-amber-600" />}
-            accent="border-l-amber-400"
-          />
-          <ImpactKpiCard
-            label="CO₂e Avoided (est.)"
-            value={`${climate.co2eAvoidedTonnes.toFixed(0)} tCO₂e`}
-            sub="per year, proxy-based"
-            icon={<Globe className="w-4 h-4 text-blue-600" />}
-            accent="border-l-blue-400"
-          />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+          <ImpactKpiCard label="Climate Finance Share" value={pct(climate.climatePositiveSharePct)} sub="Climate Positive (Common Principles)" icon={<Zap className="w-4 h-4 text-green-600" />} accent="border-l-green-400" />
+          <ImpactKpiCard label="Total Climate Lending" value={fmtNum(climate.totalClimateBalance, currency)} sub={`${pct(climate.totalClimateSharePct)} of portfolio`} icon={<Leaf className="w-4 h-4 text-emerald-600" />} accent="border-l-emerald-400" />
+          <ImpactKpiCard label="Climate Positive Loans" value={climate.positiveCount.toLocaleString()} sub={`CO₂e: ${climate.co2eAvoidedTonnes.toFixed(0)} t/yr`} icon={<Zap className="w-4 h-4 text-green-600" />} accent="border-l-green-400" />
+          <ImpactKpiCard label="Climate Resilient Loans" value={climate.resilientCount.toLocaleString()} sub={fmtNum(climate.resilientBalance, currency)} icon={<Shield className="w-4 h-4 text-blue-600" />} accent="border-l-blue-400" />
+          <ImpactKpiCard label="Climate Vulnerable Loans" value={climate.vulnerableCount.toLocaleString()} sub={`${pct((climate.vulnerableCount / climate.total) * 100)} of portfolio`} icon={<AlertTriangle className="w-4 h-4 text-amber-600" />} accent="border-l-amber-400" />
         </div>
-
-        {/* Taxonomy legend + category breakdown charts */}
         <div className="grid grid-cols-2 gap-5 mb-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <h4 className="text-xs font-bold text-[#003366] mb-3">Portfolio by Climate Category (Loans)</h4>
             <div className="flex items-center gap-4">
-              <ResponsiveContainer width="55%" height={180}>
+              <ResponsiveContainer width="55%" height={160}>
                 <PieChart>
-                  <Pie
-                    data={climatePieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={72}
-                    dataKey="value"
-                    paddingAngle={2}
-                  >
-                    {climatePieData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
+                  <Pie data={climatePieData} cx="50%" cy="50%" innerRadius={44} outerRadius={68} dataKey="value" paddingAngle={2}>
+                    {climatePieData.map(e => <Cell key={e.name} fill={e.color} />)}
                   </Pie>
                   <Tooltip formatter={(v: unknown) => [`${Number(v).toLocaleString()} loans`]} />
                 </PieChart>
@@ -315,342 +258,468 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
                       <span className="text-[10px] text-gray-600">{d.name}</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-gray-800">
-                      {d.value.toLocaleString()} ({pct((d.value / climate.total) * 100)})
-                    </span>
+                    <span className="text-[10px] font-semibold text-gray-800">{d.value.toLocaleString()} ({pct((d.value / climate.total) * 100)})</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h4 className="text-xs font-bold text-[#003366] mb-3">
-              Climate Lending by Category ({currency})
-            </h4>
-            <ResponsiveContainer width="100%" height={180}>
+            <h4 className="text-xs font-bold text-[#003366] mb-3">Climate Lending by Category ({currency})</h4>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={climateBalanceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                <YAxis
-                  tick={{ fontSize: 9 }}
-                  tickFormatter={v =>
-                    currency === 'USD'
-                      ? `$${(v / KES_TO_USD / 1e6).toFixed(1)}M`
-                      : `${(v / 1e6).toFixed(0)}M`
-                  }
-                />
+                <YAxis tick={{ fontSize: 9 }} tickFormatter={v => currency === 'USD' ? `$${(v / KES_TO_USD / 1e6).toFixed(1)}M` : `${(v / 1e6).toFixed(0)}M`} />
                 <Tooltip formatter={(val: unknown) => [fmtNum(Number(val), currency)]} />
                 <Bar dataKey="value" name="Balance" radius={[4, 4, 0, 0]}>
-                  {climateBalanceData.map(d => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
+                  {climateBalanceData.map(d => <Cell key={d.name} fill={d.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Female borrowers in climate segments */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Heart className="w-4 h-4 text-pink-500" />
-            <h4 className="text-xs font-bold text-[#003366]">Female Borrowers in Climate-Impacted Segments</h4>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-pink-600">
-                {climate.femaleBorrowersInClimate.toLocaleString()}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Estimated women borrowers</p>
-              <p className="text-[10px] text-gray-400">in climate-classified loans</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-800">
-                {pct(climate.total > 0 ? (climate.femaleBorrowersInClimate / (climate.positiveCount + climate.resilientCount + climate.vulnerableCount)) * 100 : 0)}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Share of climate-classified loans</p>
-              <p className="text-[10px] text-gray-400">held by women (proxy)</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-amber-600">
-                {pct(climate.total > 0 ? (climate.femaleBorrowersInClimate / climate.total) * 100 : 0)}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Women in total portfolio</p>
-              <p className="text-[10px] text-gray-400">who are climate-segment borrowers</p>
-            </div>
-          </div>
-          <InfoBar>
-            Women borrower share is estimated using segment-level proxy rates consistent with East African MFI
-            research: Group lending 85% women (IFC Women in MSME Finance, 2019), Individual lending 50%,
-            Enterprise lending 40%. Actual gender data should be collected at originator level for precise reporting.
-          </InfoBar>
-        </div>
-
-        {/* CO2e detail card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe className="w-4 h-4 text-blue-600" />
-            <h4 className="text-xs font-bold text-[#003366]">CO₂e Avoided — Detail & Methodology</h4>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mb-3">
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-[10px] text-green-600 mb-1">Boda-Boda (e-boda) loans</p>
-              <p className="text-xl font-bold text-green-700">{climate.positiveCount.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-400">Climate Positive loans</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-[10px] text-blue-600 mb-1">Estimated CO₂e avoided</p>
-              <p className="text-xl font-bold text-blue-700">{climate.co2eAvoidedTonnes.toFixed(0)} t</p>
-              <p className="text-[10px] text-gray-400">per year (proxy)</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <p className="text-[10px] text-gray-500 mb-1">Emission factor</p>
-              <p className="text-xl font-bold text-gray-700">0.58 t</p>
-              <p className="text-[10px] text-gray-400">CO₂e per loan per year</p>
-            </div>
-          </div>
-          <InfoBar>
-            <strong>Scope:</strong> Climate Positive loans only (Boda-Boda / e-boda, MDB Common Principles activity 8.6).<br />
-            <strong>Emission factor basis:</strong> Petrol boda-boda — 15,000 km/yr at 30 km/L → 500 L × 2.31 kgCO₂/L = 1,155 kgCO₂e/yr.
-            E-boda — 0.08 kWh/km × 15,000 km = 1,200 kWh × 0.48 kgCO₂/kWh (Kenya grid, IRENA 2022) = 576 kgCO₂e/yr.
-            Net saving: ≈ 579 kgCO₂e ≈ 0.58 tCO₂e per active loan per year.<br />
-            <strong>Sources:</strong> IPCC AR6 (2022); IRENA Kenya grid emission factor (2022); MDB/IDFC Common Principles for Climate Mitigation Finance Tracking (Dec 2023).<br />
-            <strong>Limitations:</strong> Proxy-based; actual savings depend on vehicle utilisation, charging infrastructure, and grid decarbonisation trajectory. Not yet independently verified.
-          </InfoBar>
-        </div>
-
-        {/* Portfolio scope: climate baseline trajectory */}
         {scope === 'portfolio' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-4">
-            <h4 className="text-xs font-bold text-[#003366] mb-1">
-              Climate Impact Lending — Baseline Trajectory (Network)
-            </h4>
-            <p className="text-[10px] text-gray-500 mb-3">
-              Tracked climate lending across the originator network FY23–FY26 est. (USD millions)
-            </p>
-            <ResponsiveContainer width="100%" height={180}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-1">Climate Lending Trajectory (Network, USD millions)</h4>
+            <p className="text-[10px] text-gray-500 mb-3">FY23–FY26 est. — tracked climate lending across originator network</p>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={CLIMATE_BASELINE_TRAJECTORY}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="fy" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${v}M`} />
                 <Tooltip formatter={(v: unknown) => [`$${Number(v).toFixed(2)}M`]} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="resilient" name="Climate Resilient" stackId="a" fill={CLIMATE_COLORS.resilient} />
+                <Bar dataKey="positive"   name="Climate Positive"   stackId="a" fill={CLIMATE_COLORS.positive} />
+                <Bar dataKey="resilient"  name="Climate Resilient"  stackId="a" fill={CLIMATE_COLORS.resilient} />
                 <Bar dataKey="vulnerable" name="Climate Vulnerable" stackId="a" fill={CLIMATE_COLORS.vulnerable} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-gray-400 mt-2">
-              Source: Kaleidofin Africa internal climate impact data. FY26 figure is estimated.
-              Climate Positive category not separately tracked in FY23–FY25 baseline.
-            </p>
           </div>
         )}
       </div>
 
       {/* ================================================================
-          SECTION 2 — CLIMATE EARLY WARNING INDICATORS
+          SECTION 1 — CLIMATE POSITIVE
+          ================================================================ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-4 h-4 text-green-600" />
+          <h3 className="text-sm font-bold text-gray-800">Climate Positive Lending</h3>
+          <span className="text-[10px] text-gray-400 font-medium ml-1">Zero / near-zero emission finance · CO₂e avoided</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <ImpactKpiCard label="Climate Positive Loans" value={climate.positiveCount.toLocaleString()} sub={fmtNum(climate.positiveBalance, currency)} icon={<Zap className="w-4 h-4 text-green-600" />} accent="border-l-green-400" />
+          <ImpactKpiCard label="CO₂e Avoided (est.)" value={`${climate.co2eAvoidedTonnes.toFixed(0)} tCO₂e`} sub="per year across all types" icon={<Globe className="w-4 h-4 text-blue-600" />} accent="border-l-blue-400" />
+          <ImpactKpiCard label="Avg CO₂e Per Loan" value={climate.positiveCount > 0 ? `${(climate.co2eAvoidedTonnes / climate.positiveCount).toFixed(2)} t` : '—'} sub="weighted average by product mix" icon={<Leaf className="w-4 h-4 text-emerald-600" />} accent="border-l-emerald-400" />
+          <ImpactKpiCard label="Climate Finance Share" value={pct(climate.climatePositiveSharePct)} sub="of total portfolio balance" icon={<TrendingUp className="w-4 h-4 text-green-600" />} accent="border-l-green-400" />
+        </div>
+
+        {/* Product sub-type breakdown */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-4">
+          <h4 className="text-xs font-bold text-[#003366] mb-3">Climate Positive — Breakdown by Product Type</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b text-gray-500 uppercase text-[10px]">
+                  <th className="text-left px-3 py-2">Product</th>
+                  <th className="text-right px-3 py-2">Loans</th>
+                  <th className="text-right px-3 py-2">Balance</th>
+                  <th className="text-right px-3 py-2">tCO₂e / loan / yr</th>
+                  <th className="text-right px-3 py-2">Total CO₂e Avoided (t/yr)</th>
+                  <th className="text-right px-3 py-2">% of Climate +ve</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.keys(CO2E_FACTORS).map(product => {
+                  const sub = posBreakdown.find(s => s.product === product);
+                  const count = sub?.count ?? 0;
+                  const bal = sub?.balance ?? 0;
+                  const co2e = sub?.co2eAvoided ?? 0;
+                  const tPerLoan = CO2E_FACTORS[product].tCO2ePerLoanPerYear;
+                  return (
+                    <tr key={product} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          {PRODUCT_ICONS[product]}
+                          <span className="font-medium">{CLIMATE_PRODUCT_LABELS[product] ?? product}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">{count.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-mono">{count > 0 ? fmtNum(bal, currency) : '—'}</td>
+                      <td className="px-3 py-2 text-right font-mono text-green-700">{tPerLoan.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-green-700">{count > 0 ? co2e.toFixed(0) : '—'}</td>
+                      <td className="px-3 py-2 text-right">{climate.positiveCount > 0 && count > 0 ? pct((count / climate.positiveCount) * 100) : '—'}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-green-50 font-semibold">
+                  <td className="px-3 py-2 text-green-800">Total Climate Positive</td>
+                  <td className="px-3 py-2 text-right font-mono">{climate.positiveCount.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right font-mono">{fmtNum(climate.positiveBalance, currency)}</td>
+                  <td className="px-3 py-2 text-right font-mono text-green-700">—</td>
+                  <td className="px-3 py-2 text-right font-mono text-green-700">{climate.co2eAvoidedTonnes.toFixed(0)}</td>
+                  <td className="px-3 py-2 text-right">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <InfoBar>
+            <strong>E-Boda:</strong> Electric motorcycle vs petrol boda-boda. Net: ~0.58 tCO₂e/loan/yr. IPCC AR6 + IRENA Kenya grid (2022).<br />
+            <strong>EV:</strong> Electric 4WD vs petrol equivalent. Net: ~2.02 tCO₂e/loan/yr. MDB Common Principles activity 8.6.<br />
+            <strong>Solar Home:</strong> Displaces kerosene and charcoal. Net: ~0.47 tCO₂e/loan/yr. GOGLA Sector Impact (2023).<br />
+            <strong>Solar Pump:</strong> Displaces diesel irrigation pump. Net: ~1.61 tCO₂e/loan/yr. IFC Lighting Africa (2022).<br />
+            All figures are proxy-based estimates. Actual savings depend on utilisation, grid factor trajectory, and local baselines.
+          </InfoBar>
+        </div>
+      </div>
+
+      {/* ================================================================
+          SECTION 2 — CLIMATE RESILIENT
+          ================================================================ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-bold text-gray-800">Climate Resilient Lending</h3>
+          <span className="text-[10px] text-gray-400 font-medium ml-1">Agri · MSME · SACCO · crop-cycle aligned · risk-based pricing</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <ImpactKpiCard label="Resilient Loans" value={climate.resilientCount.toLocaleString()} sub={fmtNum(climate.resilientBalance, currency)} icon={<Shield className="w-4 h-4 text-blue-600" />} accent="border-l-blue-400" />
+          <ImpactKpiCard label="Women Secondary Income" value={resBreakdown.womenAgriCount.toLocaleString()} sub="Group Agri borrowers (proxy)" icon={<Heart className="w-4 h-4 text-pink-500" />} accent="border-l-pink-400" />
+          <ImpactKpiCard label="Crop Cycle Aligned" value={pct(resBreakdown.cropCycleAlignedPct)} sub="Agri loans disbursed at planting" icon={<Sprout className="w-4 h-4 text-teal-600" />} accent="border-l-teal-400" />
+          <ImpactKpiCard
+            label="Risk-Based Pricing Benefit"
+            value={resBreakdown.pricingBenefitPct > 0 ? `${resBreakdown.pricingBenefitPct.toFixed(1)}% lower rate` : 'No premium'}
+            sub={`Resilient avg: ${resBreakdown.avgRateResilient.toFixed(1)}% vs overall: ${resBreakdown.avgRateOverall.toFixed(1)}%`}
+            icon={<TrendingDown className="w-4 h-4 text-indigo-600" />}
+            accent="border-l-indigo-400"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-5 mb-4">
+          {/* Sub-category breakdown */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-3">Resilient Sub-Categories</h4>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Women Secondary Income (Group Agri)', count: resBreakdown.womenAgriCount,   balance: resBreakdown.womenAgriBalance,   color: 'bg-pink-400',  desc: 'Agri-Finance, Group segment — women small-holder proxy' },
+                { label: 'Irrigation Loans (≥ KES 150K Agri)',  count: resBreakdown.irrigationCount,  balance: resBreakdown.irrigationBalance,  color: 'bg-blue-400',  desc: 'Larger Agri-Finance — irrigation infrastructure' },
+                { label: 'Farm Input Loans (< KES 80K Agri)',   count: resBreakdown.farmInputCount,   balance: resBreakdown.farmInputBalance,   color: 'bg-teal-400',  desc: 'Small agri-input finance: seeds, fertilizer' },
+                { label: 'General Agri (KES 80K–150K)',         count: resBreakdown.generalAgriCount, balance: resBreakdown.generalAgriBalance, color: 'bg-green-400', desc: 'Mid-range agri credit' },
+                { label: 'MSME (Climate Resilient Geos)',        count: resBreakdown.msmeCount,        balance: resBreakdown.msmeBalance,        color: 'bg-indigo-400', desc: 'MSME loans in low/medium risk geographies' },
+                { label: 'SACCO / Cooperative',                  count: resBreakdown.saccoCount,       balance: resBreakdown.saccoBalance,       color: 'bg-violet-400', desc: 'Community savings and cooperative lending' },
+              ].map(row => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <div>
+                      <span className="text-[10px] font-medium text-gray-700">{row.label}</span>
+                      <span className="text-[9px] text-gray-400 ml-2">{row.desc}</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-800 shrink-0 ml-2">
+                      {row.count.toLocaleString()} — {fmtNum(row.balance, currency)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className={`h-1.5 rounded-full ${row.color}`}
+                      style={{ width: `${climate.resilientCount > 0 ? Math.min((row.count / climate.resilientCount) * 100, 100) : 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Crop cycle + pricing */}
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h4 className="text-xs font-bold text-[#003366] mb-3 flex items-center gap-1.5">
+                <Sprout className="w-3.5 h-3.5 text-teal-600" /> Crop Cycle Aligned Repayment
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-teal-50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-teal-700">{resBreakdown.cropCycleAlignedCount.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Crop-cycle aligned Agri loans</p>
+                  <p className="text-[10px] text-gray-400">Disbursed in Oct–Dec or Mar–Apr</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-gray-800">{pct(resBreakdown.cropCycleAlignedPct)}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Of all Agri-Finance loans</p>
+                  <p className="text-[10px] text-gray-400">aligned to planting seasons</p>
+                </div>
+              </div>
+              <p className="text-[9px] text-gray-400 mt-2">Kenya long-rains prep: Oct–Dec. Short-rains prep: Mar–Apr. Aligned disbursements improve repayment performance.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <h4 className="text-xs font-bold text-[#003366] mb-3 flex items-center gap-1.5">
+                <TrendingDown className="w-3.5 h-3.5 text-indigo-600" /> Risk-Based Pricing Signal
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-indigo-700">{resBreakdown.avgRateResilient.toFixed(1)}%</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Avg rate — Resilient loans</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xl font-bold text-gray-700">{resBreakdown.avgRateOverall.toFixed(1)}%</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Avg rate — Overall portfolio</p>
+                </div>
+              </div>
+              {resBreakdown.pricingBenefitPct > 0 && (
+                <p className="text-[10px] text-green-700 font-semibold mt-2 bg-green-50 rounded px-2 py-1">
+                  ✓ Resilient borrowers benefit from {resBreakdown.pricingBenefitPct.toFixed(1)}% lower average rates vs portfolio — consistent with risk-based pricing framework.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================
+          SECTION 3 — CLIMATE VULNERABLE
+          ================================================================ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <h3 className="text-sm font-bold text-gray-800">Climate Vulnerable Borrowers</h3>
+          <span className="text-[10px] text-gray-400 font-medium ml-1">High climate-risk geographies · small-holder farmers</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <ImpactKpiCard label="Vulnerable Loans" value={climate.vulnerableCount.toLocaleString()} sub={fmtNum(climate.vulnerableBalance, currency)} icon={<AlertTriangle className="w-4 h-4 text-amber-600" />} accent="border-l-amber-400" />
+          <ImpactKpiCard label="Small-Holder Farmers" value={vulBreakdown.smallHolderCount.toLocaleString()} sub="Agri loan ≤ KES 40K (high risk)" icon={<Sprout className="w-4 h-4 text-orange-500" />} accent="border-l-orange-400" />
+          <ImpactKpiCard
+            label="Vulnerable PAR 30+"
+            value={pct(vulBreakdown.par30Vulnerable)}
+            sub={`vs overall: ${pct(vulBreakdown.par30Overall)}`}
+            icon={<TrendingDown className="w-4 h-4 text-red-500" />}
+            accent={vulBreakdown.par30Vulnerable > vulBreakdown.par30Overall * 1.2 ? 'border-l-red-400' : 'border-l-amber-400'}
+          />
+          <ImpactKpiCard label="Small-Holder PAR 30+" value={pct(vulBreakdown.smallHolderPar30)} sub="Most at-risk sub-segment" icon={<Shield className="w-4 h-4 text-red-500" />} accent="border-l-red-400" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-5">
+          {/* Geography breakdown */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-3">Vulnerable Exposure by Geography</h4>
+            {vulBreakdown.byGeo.length > 0 ? (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b text-gray-500 uppercase text-[10px]">
+                    <th className="text-left px-2 py-1.5">Geography</th>
+                    <th className="text-left px-2 py-1.5">Risk</th>
+                    <th className="text-right px-2 py-1.5">Loans</th>
+                    <th className="text-right px-2 py-1.5">Balance</th>
+                    <th className="text-right px-2 py-1.5">PAR 30+</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vulBreakdown.byGeo.map(g => (
+                    <tr key={g.geo} className="border-b border-gray-100">
+                      <td className="px-2 py-1.5 font-medium">{g.geo}</td>
+                      <td className="px-2 py-1.5">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${g.riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{g.riskLevel}</span>
+                      </td>
+                      <td className="px-2 py-1.5 text-right">{g.count.toLocaleString()}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fmtNum(g.balance, currency)}</td>
+                      <td className={`px-2 py-1.5 text-right ${g.par30 > 15 ? 'text-red-600 font-semibold' : g.par30 > 10 ? 'text-amber-600' : ''}`}>{pct(g.par30)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-[10px] text-gray-400 italic">No climate-vulnerable loans in high-risk geographies for current scope.</p>
+            )}
+          </div>
+
+          {/* Small-holder detail */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-3">Small-Holder Farmers (Most Vulnerable)</h4>
+            <div className="space-y-3">
+              <div className="bg-orange-50 rounded-lg p-3">
+                <p className="text-[10px] text-orange-600 mb-1 font-semibold">Definition: Agri-Finance loan ≤ KES 40,000 in high-risk geography</p>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-orange-700">{vulBreakdown.smallHolderCount.toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-500">Small-holder borrowers</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-orange-700">{fmtNum(vulBreakdown.smallHolderBalance, currency)}</p>
+                    <p className="text-[10px] text-gray-500">Outstanding balance</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-red-50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-red-700">{pct(vulBreakdown.smallHolderPar30)}</p>
+                  <p className="text-[10px] text-gray-500">PAR 30+ (small-holders)</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-gray-700">{pct(vulBreakdown.par30Overall)}</p>
+                  <p className="text-[10px] text-gray-500">PAR 30+ (portfolio avg)</p>
+                </div>
+              </div>
+              <p className="text-[9px] text-gray-500 leading-relaxed">
+                Small-holder farmers in drought-prone regions (Kisumu, Machakos, Eldoret) face amplified default risk during climate events. Proactive engagement and crop-loss insurance can significantly reduce delinquency.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================
+          SECTION 4 — SOCIO-ECONOMIC IMPACT
+          ================================================================ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="w-4 h-4 text-purple-600" />
+          <h3 className="text-sm font-bold text-gray-800">Socio-economic Impact</h3>
+          <span className="text-[10px] text-gray-400 font-medium ml-1">Borrower profile · financial inclusion · income uplift</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+          <ImpactKpiCard label="Women Borrowers (est.)" value={pct(socio.womenPct)} sub={`${socio.womenBorrowers.toLocaleString()} of ${socio.totalBorrowers.toLocaleString()}`} icon={<Heart className="w-4 h-4 text-pink-500" />} accent="border-l-pink-400" />
+          <ImpactKpiCard label="Low Income Group" value={pct(socio.lowIncomePct)} sub={`Loan < ${currency === 'USD' ? `$${(50000 / KES_TO_USD).toFixed(0)}` : 'KES 50K'}`} icon={<Shield className="w-4 h-4 text-indigo-500" />} accent="border-l-indigo-400" />
+          <ImpactKpiCard label="New to Credit (NTC)" value={pct(socio.ntcPct)} sub={`${socio.ntcBorrowers.toLocaleString()} first-time micro borrowers`} icon={<Building2 className="w-4 h-4 text-violet-500" />} accent="border-l-violet-400" />
+          <ImpactKpiCard label="Micro-Entrepreneurs" value={pct(socio.microEntrepreneursPct)} sub={`${socio.microEntrepreneurs.toLocaleString()} MSME borrowers`} icon={<Briefcase className="w-4 h-4 text-blue-500" />} accent="border-l-blue-400" />
+          <ImpactKpiCard label="Rural Borrowers" value={pct(socio.ruralPct)} sub={`${socio.ruralBorrowers.toLocaleString()} borrowers`} icon={<MapPin className="w-4 h-4 text-teal-600" />} accent="border-l-teal-400" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-5 mb-4">
+          {/* Community finance reach */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-3">Financial Inclusion Reach</h4>
+            <div className="space-y-3">
+              {[
+                { label: 'Women borrowers (proxy)',     count: socio.womenBorrowers,     pct: socio.womenPct,             color: 'bg-pink-400' },
+                { label: 'Low-income borrowers',        count: socio.lowIncomeBorrowers, pct: socio.lowIncomePct,         color: 'bg-indigo-400' },
+                { label: 'New to Credit (NTC)',          count: socio.ntcBorrowers,       pct: socio.ntcPct,               color: 'bg-violet-400' },
+                { label: 'Micro-entrepreneurs',          count: socio.microEntrepreneurs, pct: socio.microEntrepreneursPct,color: 'bg-blue-400' },
+                { label: 'Rural borrowers',              count: socio.ruralBorrowers,     pct: socio.ruralPct,             color: 'bg-teal-400' },
+                { label: 'Group / cooperative lending',  count: socio.cooperativeBorrowers, pct: socio.totalBorrowers > 0 ? (socio.cooperativeBorrowers / socio.totalBorrowers) * 100 : 0, color: 'bg-purple-400' },
+              ].map(row => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] text-gray-600">{row.label}</span>
+                    <span className="text-[10px] font-semibold text-gray-800">{row.count.toLocaleString()} ({pct(row.pct)})</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`h-2 rounded-full ${row.color}`} style={{ width: `${Math.min(row.pct, 100)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Income impact */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+            <h4 className="text-xs font-bold text-[#003366] mb-3 flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-green-600" /> Estimated Annual Income Impact
+            </h4>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-green-50 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-green-700">{fmtNum(socio.estimatedAnnualIncomeImpactKES, currency)}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Estimated annual income uplift</p>
+                <p className="text-[10px] text-gray-400">across all borrowers</p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-blue-700">
+                  {socio.totalBorrowers > 0 ? fmtNum(socio.estimatedAnnualIncomeImpactKES / socio.totalBorrowers, currency) : '—'}
+                </p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Per borrower per year</p>
+                <p className="text-[10px] text-gray-400">estimated income uplift</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-violet-50 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-violet-700">{socio.jobsSupported.toLocaleString()}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Jobs supported (est.)</p>
+                <p className="text-[10px] text-gray-400">direct + indirect</p>
+              </div>
+              <div className="bg-teal-50 rounded-lg p-3 text-center">
+                <p className="text-xl font-bold text-teal-700">{fmtNum(socio.avgLoanSizeKES, currency)}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Average loan size</p>
+                <p className="text-[10px] text-gray-400">disbursed amount</p>
+              </div>
+            </div>
+            <InfoBar>
+              <strong>Income multipliers (annual income per KES deployed):</strong><br />
+              Boda-Boda 2.2× · EV 1.8× · MSME 1.5× · SME Trade 1.3× · Solar-Pump 1.2× · Agri-Finance 0.85× · SACCO 0.6× · Solar-Home 0.25× · Check-off 0.3×<br />
+              <strong>NTC proxy:</strong> Individual or Group segment with loan &lt; KES 15,000 — first-time micro-credit access.<br />
+              <strong>Micro-entrepreneur proxy:</strong> MSME product or Enterprise segment with loan &lt; KES 200,000.<br />
+              <strong>Jobs proxy:</strong> MSME/Enterprise 1.8 jobs/loan; Boda-Boda/EV 1.0; Agri-Finance 1.2; Solar-Pump 1.3; others 0.5.<br />
+              All estimates are proxy-based. Actual impact requires borrower-level survey data.
+            </InfoBar>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================
+          SECTION 5 — CLIMATE EARLY WARNING SIGNALS
           ================================================================ */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-bold text-gray-800">Climate Early Warning Indicators</h3>
+          <h3 className="text-sm font-bold text-gray-800">Climate Early Warning Signals</h3>
           {activeAlerts > 0 && (
             <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
               {activeAlerts} active signal{activeAlerts > 1 ? 's' : ''}
             </span>
           )}
+          {highRiskRecs > 0 && (
+            <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold ml-1">
+              {highRiskRecs} high-risk geo{highRiskRecs > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
         <p className="text-[10px] text-gray-500 mb-3">
-          Monitoring geographic, seasonal, and structural climate risk signals.
+          Portfolio-level risk indicators and geography-specific predictive signals with recommended actions.
           Indicators marked <span className="bg-gray-200 text-gray-500 px-1 rounded text-[9px] font-medium">SIMULATED</span> use
           deterministic proxies pending live seasonal baseline data.
         </p>
 
         {/* Climate risk zone legend */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-          <p className="text-[10px] font-semibold text-gray-600 mb-2">Climate Risk Zone Classification</p>
+          <p className="text-[10px] font-semibold text-gray-600 mb-2">Climate Risk Zone Classification (Kenya)</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(CLIMATE_RISK_ZONES).map(([geo, level]) => (
-              <span
-                key={geo}
-                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                  level === 'high' ? 'bg-red-100 text-red-700' :
-                  level === 'medium' ? 'bg-amber-100 text-amber-700' :
-                  'bg-green-100 text-green-700'
-                }`}
-              >
-                {geo} ({level})
-              </span>
+              <span key={geo} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                level === 'high' ? 'bg-red-100 text-red-700' :
+                level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+              }`}>{geo} ({level})</span>
             ))}
           </div>
         </div>
 
-        <div className="space-y-2.5">
-          {ewi.map(indicator => (
-            <EwiCard key={indicator.id} ewi={indicator} />
-          ))}
-        </div>
-      </div>
-
-      {/* ================================================================
-          SECTION 3 — SOCIOECONOMIC IMPACT
-          ================================================================ */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Users className="w-4 h-4 text-purple-600" />
-          <h3 className="text-sm font-bold text-gray-800">Socioeconomic Impact</h3>
-          <span className="text-[10px] text-gray-400 font-medium ml-1">
-            Borrower profile · income segments · employment
-          </span>
-        </div>
-
-        {/* Socioeconomic KPI cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-          <ImpactKpiCard
-            label="Women Borrowers (est.)"
-            value={pct(socio.womenPct)}
-            sub={`${socio.womenBorrowers.toLocaleString()} of ${socio.totalBorrowers.toLocaleString()}`}
-            icon={<Heart className="w-4 h-4 text-pink-500" />}
-            accent="border-l-pink-400"
-          />
-          <ImpactKpiCard
-            label="Rural Borrowers"
-            value={pct(socio.ruralPct)}
-            sub={`${socio.ruralBorrowers.toLocaleString()} borrowers`}
-            icon={<MapPin className="w-4 h-4 text-teal-600" />}
-            accent="border-l-teal-400"
-          />
-          <ImpactKpiCard
-            label="Low-Income Segment"
-            value={pct(socio.lowIncomePct)}
-            sub={`Loan < ${currency === 'USD' ? `$${(50000 / KES_TO_USD).toFixed(0)}` : 'KES 50K'}`}
-            icon={<Shield className="w-4 h-4 text-indigo-500" />}
-            accent="border-l-indigo-400"
-          />
-          <ImpactKpiCard
-            label="Avg Loan Size"
-            value={fmtNum(socio.avgLoanSizeKES, currency)}
-            sub="disbursed amount"
-            icon={<Briefcase className="w-4 h-4 text-blue-500" />}
-            accent="border-l-blue-400"
-          />
-          <ImpactKpiCard
-            label="Jobs Supported (est.)"
-            value={socio.jobsSupported.toLocaleString()}
-            sub="direct + indirect proxy"
-            icon={<Users className="w-4 h-4 text-violet-500" />}
-            accent="border-l-violet-400"
-          />
-        </div>
-
-        {/* Borrower distribution charts */}
-        <div className="grid grid-cols-2 gap-5 mb-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h4 className="text-xs font-bold text-[#003366] mb-3">Urban / Peri-Urban / Rural Distribution</h4>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={geoDistData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Bar dataKey="value" name="Borrowers" radius={[4, 4, 0, 0]}>
-                  <Cell fill="#6366f1" />
-                  <Cell fill="#8b5cf6" />
-                  <Cell fill="#a78bfa" />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <h4 className="text-xs font-bold text-[#003366] mb-3">Community Finance Reach</h4>
-            <div className="space-y-3 mt-2">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-gray-600">Group Lending (collective credit)</span>
-                  <span className="text-[10px] font-semibold">{socio.groupLendingCount.toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-purple-400"
-                    style={{ width: `${Math.min((socio.groupLendingCount / socio.totalBorrowers) * 100, 100)}%` }}
-                  />
-                </div>
-                <p className="text-[9px] text-gray-400 mt-0.5">
-                  {pct((socio.groupLendingCount / socio.totalBorrowers) * 100)} of portfolio
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-gray-600">Cooperative / SACCO borrowers</span>
-                  <span className="text-[10px] font-semibold">{socio.cooperativeBorrowers.toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-indigo-400"
-                    style={{ width: `${Math.min((socio.cooperativeBorrowers / socio.totalBorrowers) * 100, 100)}%` }}
-                  />
-                </div>
-                <p className="text-[9px] text-gray-400 mt-0.5">
-                  {pct((socio.cooperativeBorrowers / socio.totalBorrowers) * 100)} of portfolio (Group + SACCO)
-                </p>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-gray-600">Low-income borrowers</span>
-                  <span className="text-[10px] font-semibold">{socio.lowIncomeBorrowers.toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-teal-400"
-                    style={{ width: `${Math.min(socio.lowIncomePct, 100)}%` }}
-                  />
-                </div>
-                <p className="text-[9px] text-gray-400 mt-0.5">
-                  {pct(socio.lowIncomePct)} of portfolio (loan &lt; {currency === 'USD' ? `$${(50000 / KES_TO_USD).toFixed(0)}` : 'KES 50K'})
-                </p>
-              </div>
-            </div>
+        {/* Portfolio-level EWI indicators */}
+        <div className="mb-5">
+          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-2">Portfolio-Level Indicators</p>
+          <div className="space-y-2.5">
+            {ewi.map(indicator => <EwiCard key={indicator.id} ewi={indicator} />)}
           </div>
         </div>
 
-        {/* Jobs & methodology notes */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Briefcase className="w-4 h-4 text-blue-500" />
-            <h4 className="text-xs font-bold text-[#003366]">Employment Impact — Proxy Estimate</h4>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mb-3">
-            <div className="bg-violet-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-violet-700">{socio.jobsSupported.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Estimated jobs supported</p>
-              <p className="text-[10px] text-gray-400">direct + indirect</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-700">{fmtNum(socio.avgLoanSizeKES, currency)}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Average loan size</p>
-              <p className="text-[10px] text-gray-400">disbursed amount</p>
-            </div>
-            <div className="bg-teal-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-teal-700">
-                {socio.totalBorrowers > 0 ? (socio.jobsSupported / socio.totalBorrowers).toFixed(1) : '0'}x
+        {/* Geography-specific predictions and action recommendations */}
+        {geoRecs.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-3.5 h-3.5 text-gray-600" />
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">
+                Geography-Specific Predictions & Recommended Actions
               </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Jobs per borrower</p>
-              <p className="text-[10px] text-gray-400">portfolio average</p>
+              <span className="text-[10px] text-gray-400 italic">(As of April 2026 — upcoming risk periods)</span>
             </div>
+            <p className="text-[10px] text-gray-500 mb-3">
+              Forward-looking signals based on Kenya seasonal calendar. Recommendations are pre-emptive — act before climate events occur to protect genuine borrowers. Expand each card to see specific actions.
+            </p>
+            <div className="space-y-2.5">
+              {geoRecs.map(rec => (
+                <GeoRecCard key={rec.geo} rec={rec} currency={currency} />
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
+              <strong>Note:</strong> Geographies not represented in the current portfolio scope are not shown. Filter scope to Portfolio to see full network exposure. Climate seasonal data is proxy-based on historical IGAD/Kenya Meteorological Department records. Actual event occurrence requires real-time data integration.
+            </p>
           </div>
-          <InfoBar>
-            <strong>Employment proxy methodology:</strong> MSME / Enterprise loans → 1.8 jobs per loan (IFC MSME Finance Gap, 2017);
-            Boda-Boda → 1.0 job (self-employment); Agri-Finance → 1.2 jobs (seasonal farm labour including household workers);
-            all other → 0.5 jobs. Estimates cover direct employment and first-tier indirect employment only.
-            Does not capture supply-chain or induced effects. Actual impact assessments require borrower-level survey data.<br />
-            <strong>Women borrower methodology:</strong> Group lending segment proxy 85% women; Individual 50%; Enterprise 40%
-            (IFC Women in MSME Finance 2019, East Africa context).<br />
-            <strong>Low-income threshold:</strong> Loan disbursed amount &lt; KES 50,000 (~$385 USD), consistent with
-            financial inclusion definitions for low-income credit access in Kenya (CBK, 2023).
-          </InfoBar>
-        </div>
+        )}
+        {geoRecs.length === 0 && (
+          <p className="text-[10px] text-gray-400 italic">No high or medium risk geographies detected in the current loan scope.</p>
+        )}
       </div>
     </div>
   );

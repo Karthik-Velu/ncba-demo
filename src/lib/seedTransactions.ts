@@ -1,9 +1,18 @@
 import type { LoanLevelRow } from './types';
 import baseLoanBook from '../../data/mock-loan-book.json';
 
+// Increment when product mix or generation logic changes to force re-seed
+export const SEED_VERSION = 'v2';
+
 const GEOGRAPHIES = ['Nairobi', 'Mombasa', 'Nakuru', 'Kisumu', 'Eldoret', 'Nyeri', 'Thika', 'Machakos', 'Malindi', 'Kitale'];
-const PRODUCTS = ['Boda-Boda', 'Agri-Finance', 'Check-off', 'SACCO', 'MSME', 'Personal', 'SME Trade'];
-const SEGMENTS = ['Individual', 'Retail', 'MSME', 'Corporate'];
+const PRODUCTS = ['Boda-Boda', 'Agri-Finance', 'Check-off', 'SACCO', 'MSME', 'Personal', 'SME Trade', 'EV', 'Solar-Home', 'Solar-Pump'];
+const SEGMENTS = ['Individual', 'Retail', 'MSME', 'Corporate', 'Group', 'Enterprise'];
+
+// Per-NBFI product pools — weighted to reflect each institution's lending mandate
+const NBFI_PRODUCT_POOL: Record<string, string[]> = {
+  'seed-6': ['Boda-Boda', 'Boda-Boda', 'Boda-Boda', 'EV', 'EV', 'Solar-Pump', 'Solar-Home', 'Agri-Finance', 'MSME', 'SACCO'],
+  'seed-9': ['Solar-Home', 'Solar-Home', 'Solar-Pump', 'EV', 'EV', 'MSME', 'Agri-Finance', 'SACCO', 'Boda-Boda', 'Check-off'],
+};
 const FIRST_NAMES = ['John', 'Mary', 'Peter', 'Jane', 'James', 'Grace', 'David', 'Esther', 'Samuel', 'Wanjiku', 'Mwangi', 'Akinyi', 'Otieno', 'Nyambura', 'Kimani', 'Chebet', 'Kipchoge', 'Njeri', 'Oduor', 'Wambui'];
 const LAST_NAMES = ['Mwangi', 'Ochieng', 'Kimani', 'Njoroge', 'Wanjiku', 'Otieno', 'Akinyi', 'Chebet', 'Mutai', 'Korir', 'Ngethe', 'Wahome', 'Karanja', 'Githinji', 'Kamau'];
 
@@ -105,13 +114,14 @@ function generateLoanBook(txId: string, nbfiSeed: NBFISeed, trancheIdx: number):
   const count = trancheIdx === 0 ? Math.min(nbfiSeed.loanCount, base.length) : Math.floor(nbfiSeed.loanCount * 0.4);
   const startIdx = Math.floor(rng() * (base.length - 20));
   const profile = NBFI_HEALTH[nbfiSeed.id] || NBFI_HEALTH['seed-1'];
+  const productPool = NBFI_PRODUCT_POOL[nbfiSeed.id] || PRODUCTS;
   const rows: LoanLevelRow[] = [];
 
   for (let i = 0; i < count; i++) {
     const src = base[(startIdx + i) % base.length];
     const balMul = 0.7 + rng() * 0.8;
     const geoIdx = Math.floor(rng() * GEOGRAPHIES.length);
-    const prodIdx = Math.floor(rng() * PRODUCTS.length);
+    const prodIdx = Math.floor(rng() * productPool.length);
     const segIdx = Math.floor(rng() * SEGMENTS.length);
     const dpd = assignDpd(rng, profile);
     const bal = Math.round(src.currentBalance * balMul * 100) / 100;
@@ -136,7 +146,7 @@ function generateLoanBook(txId: string, nbfiSeed: NBFISeed, trancheIdx: number):
       repossession: written && rng() < 0.3,
       recoveryAfterWriteoff: recov,
       geography: rng() < 0.6 ? (src.geography || GEOGRAPHIES[geoIdx]) : GEOGRAPHIES[geoIdx],
-      product: rng() < 0.5 ? (src.product || PRODUCTS[prodIdx]) : PRODUCTS[prodIdx],
+      product: rng() < 0.4 ? (src.product || productPool[prodIdx]) : productPool[prodIdx],
       segment: rng() < 0.5 ? (src.segment || SEGMENTS[segIdx]) : SEGMENTS[segIdx],
       borrowerName: `${FIRST_NAMES[Math.floor(rng() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(rng() * LAST_NAMES.length)]}`,
       residualTenureMonths: Math.floor(rng() * 36) + 3,
