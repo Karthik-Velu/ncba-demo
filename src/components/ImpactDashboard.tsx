@@ -7,7 +7,6 @@ import {
   computeClimatePositiveBreakdown,
   computeClimateResilientBreakdown,
   computeClimateVulnerableBreakdown,
-  computeClimateEWI,
   computeClimateGeoProbabilities,
   computeSocioeconomicMetrics,
   CLIMATE_RISK_ZONES,
@@ -15,11 +14,10 @@ import {
   CLIMATE_PRODUCT_LABELS,
   CLIMATE_BASELINE_TRAJECTORY,
   KES_TO_USD,
-  type ClimateEWI,
   type ClimateGeoProbability,
 } from '@/lib/climateImpact';
 import {
-  Leaf, Zap, Shield, Users, MapPin, AlertTriangle, CheckCircle,
+  Leaf, Zap, Shield, Users, MapPin, AlertTriangle,
   ChevronDown, ChevronUp, Info, Heart, Briefcase, Globe,
   Sun, Truck, Droplets, TrendingDown, TrendingUp, Sprout, Building2,
 } from 'lucide-react';
@@ -86,40 +84,6 @@ function InfoBar({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EwiCard({ ewi }: { ewi: ClimateEWI }) {
-  const [expanded, setExpanded] = useState(false);
-  const theme = {
-    ok:    { bg: 'bg-green-50', border: 'border-green-200', badge: 'bg-green-100 text-green-700',  icon: <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />,  label: 'On Track' },
-    watch: { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700',  icon: <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />, label: 'Watch' },
-    alert: { bg: 'bg-red-50',   border: 'border-red-200',   badge: 'bg-red-100 text-red-700',      icon: <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />,   label: 'Alert' },
-  }[ewi.status];
-  return (
-    <div className={`rounded-lg border p-3 ${theme.bg} ${theme.border}`}>
-      <div className="flex items-start gap-2">
-        {theme.icon}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-xs font-semibold text-gray-800">{ewi.label}</p>
-                {ewi.isSimulated && <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium tracking-wide">SIMULATED</span>}
-              </div>
-              <p className="text-[10px] text-gray-500 mt-0.5">{ewi.description}</p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${theme.badge}`}>{ewi.value}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${theme.badge}`}>{theme.label}</span>
-              <button type="button" onClick={() => setExpanded(!expanded)} className="text-gray-400 hover:text-gray-600 ml-1">
-                {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          </div>
-          {expanded && <p className="text-[10px] text-gray-600 mt-2 pt-2 border-t border-gray-200 leading-relaxed">{ewi.detail}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ProbBar({ value, thresholds }: { value: number; thresholds: [number, number] }) {
   const color = value >= thresholds[1] ? 'bg-red-500' : value >= thresholds[0] ? 'bg-amber-400' : 'bg-green-400';
@@ -159,11 +123,9 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
   const posBreakdown  = useMemo(() => computeClimatePositiveBreakdown(loans), [loans]);
   const resBreakdown  = useMemo(() => computeClimateResilientBreakdown(loans), [loans]);
   const vulBreakdown  = useMemo(() => computeClimateVulnerableBreakdown(loans), [loans]);
-  const ewi           = useMemo(() => computeClimateEWI(loans), [loans]);
   const geoProbs      = useMemo(() => computeClimateGeoProbabilities(loans), [loans]);
   const socio         = useMemo(() => computeSocioeconomicMetrics(loans), [loans]);
 
-  const activeAlerts = ewi.filter(e => e.status !== 'ok').length;
   const highRiskRecs = geoProbs.filter(r => r.riskLevel === 'high').length;
 
   const climatePieData = [
@@ -630,51 +592,35 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
       </div>
 
       {/* ================================================================
-          SECTION 5 — CLIMATE EARLY WARNING SIGNALS
+          SECTION 5 — CLIMATE GEOGRAPHY RISK MATRIX
           ================================================================ */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-bold text-gray-800">Climate Early Warning Signals</h3>
-          {activeAlerts > 0 && (
-            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
-              {activeAlerts} active signal{activeAlerts > 1 ? 's' : ''}
-            </span>
-          )}
+          <h3 className="text-sm font-bold text-gray-800">Climate Geography Risk Matrix</h3>
           {highRiskRecs > 0 && (
             <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold ml-1">
               {highRiskRecs} high-risk geo{highRiskRecs > 1 ? 's' : ''}
             </span>
           )}
         </div>
-        <p className="text-[10px] text-gray-500 mb-3">
-          Portfolio-level risk indicators computed from loan performance data, combined with a geography-level
-          climate probability matrix derived from historical climate variables and seasonal forecasts.
-          Indicators marked <span className="bg-gray-200 text-gray-500 px-1 rounded text-[9px] font-medium">SIMULATED</span> use
-          deterministic proxies pending live baseline data feeds.
-        </p>
-
-        {/* Climate risk zone legend */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-          <p className="text-[10px] font-semibold text-gray-600 mb-2">Climate Risk Zone Classification (Kenya)</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(CLIMATE_RISK_ZONES).map(([geo, level]) => (
-              <span key={geo} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                level === 'high' ? 'bg-red-100 text-red-700' :
-                level === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-              }`}>{geo} ({level})</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Portfolio-level EWI indicators */}
-        <div className="mb-5">
-          <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mb-2">Portfolio-Level Indicators</p>
-          <div className="space-y-2.5">
-            {ewi.map(indicator => <EwiCard key={indicator.id} ewi={indicator} />)}
-          </div>
-        </div>
-
+        {/* 3-stat portfolio summary */}
+        {(() => {
+          const highRiskLoans = loans.filter(l => ['Kisumu','Eldoret','Machakos'].includes(l.geography ?? ''));
+          const agriLoans = loans.filter(l => l.product === 'Agri-Finance');
+          const agriPar30 = agriLoans.length > 0 ? (agriLoans.filter(l => l.dpdAsOfReportingDate > 30).length / agriLoans.length) * 100 : 0;
+          const overallPar30 = loans.length > 0 ? (loans.filter(l => l.dpdAsOfReportingDate > 30).length / loans.length) * 100 : 0;
+          const writeOffRate = loans.length > 0 ? (loans.filter(l => l.loanWrittenOff).length / loans.length) * 100 : 0;
+          return (
+            <p className="text-[10px] text-gray-500 mb-4">
+              <span className="font-semibold text-gray-700">{((highRiskLoans.length / loans.length) * 100).toFixed(1)}%</span> of portfolio in high climate-risk geographies (Kisumu, Eldoret, Machakos)
+              {' · '}
+              <span className={`font-semibold ${agriPar30 > overallPar30 * 1.2 ? 'text-amber-600' : 'text-gray-700'}`}>Agri PAR 30+: {agriPar30.toFixed(1)}%</span> vs portfolio {overallPar30.toFixed(1)}%
+              {' · '}
+              <span className="font-semibold text-gray-700">Write-off rate: {writeOffRate.toFixed(1)}%</span>
+            </p>
+          );
+        })()}
         {/* Geography-specific climate probability matrix */}
         {geoProbs.length > 0 && (
           <div>
