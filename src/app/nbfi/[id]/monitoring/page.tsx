@@ -110,7 +110,6 @@ export default function MonitoringPage() {
 
   useEffect(() => { if (!user) router.push('/'); }, [user, router]);
   const nbfi = getNBFI(id);
-  if (!user || !nbfi) return null;
 
   const txLoans: LoanLevelRow[] = loanBookData[id] || [];
   const nbfiTxIds = TRANSACTION_MAP[id] || [id];
@@ -221,6 +220,9 @@ export default function MonitoringPage() {
       return { id: nid, name: n.name, status: n.status, loans: rows.length, bal, par90: p90, nplRatio: npl, lossRate: loss.rate * 100, grossLoss: fin.grossLoss, provisions: fin.provisions, score };
     }).filter(Boolean).sort((a, b) => (b?.score ?? 0) - (a?.score ?? 0)) as { id: string; name: string; status: string; loans: number; bal: number; par90: number; nplRatio: number; lossRate: number; grossLoss: number; provisions: number; score: number }[];
   }, [scope, nbfiGroups, nbfis]);
+
+  // Guard after all hooks — prevents Rules of Hooks violations on initial load
+  if (!user || !nbfi) return null;
 
   const handleExport = () => {
     const headers = ['loanId', 'product', 'geography', 'segment', 'currentBalance', 'dpdAsOfReportingDate', 'totalOverdueAmount', 'interestRate', 'loanWrittenOff', 'recoveryAfterWriteoff'];
