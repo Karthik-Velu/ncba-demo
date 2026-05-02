@@ -8,6 +8,7 @@ import {
   MonitoringData, LoanBookUploadMeta, TransactionType, SecuritisationStructure,
 } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { NBFI_SEEDS, getAllSeedLoanBooks } from '@/lib/seedTransactions';
 
 import inputTemplateData from '../../data/input-template.json';
 import nbfiOutputData from '../../data/nbfi-output.json';
@@ -128,9 +129,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedRole = localStorage.getItem(LS_ROLE) as 'analyst' | 'approver' | 'nbfi_user' | null;
     if (savedRole && USERS[savedRole]) setUser(USERS[savedRole]);
 
-    const savedNbfis     = lsGet<NBFIRecord[]>(LS_NBFIS, []);
-    const savedLoanBooks = lsGet<Record<string, LoanLevelRow[]>>(LS_LOAN_BOOK, {});
-    const savedPools     = lsGet<Record<string, PoolSelectionState>>(LS_POOL_SEL, {});
+    let savedNbfis     = lsGet<NBFIRecord[]>(LS_NBFIS, []);
+    let savedLoanBooks = lsGet<Record<string, LoanLevelRow[]>>(LS_LOAN_BOOK, {});
+    const savedPools   = lsGet<Record<string, PoolSelectionState>>(LS_POOL_SEL, {});
+
+    // Bootstrap seed data on first load (empty localStorage)
+    if (savedNbfis.length === 0) {
+      savedNbfis = NBFI_SEEDS.map(s => ({
+        id: s.id,
+        name: s.name,
+        keyContacts: s.keyContacts,
+        fundingAmount: s.fundingAmount,
+        description: s.description,
+        status: s.status as NBFIStatus,
+        dateOnboarded: s.dateOnboarded,
+        commentary: [],
+      }));
+      lsSet(LS_NBFIS, savedNbfis);
+    }
+
+    if (Object.keys(savedLoanBooks).length === 0) {
+      savedLoanBooks = getAllSeedLoanBooks();
+      lsSet(LS_LOAN_BOOK, savedLoanBooks);
+    }
 
     setNbfisState(savedNbfis);
     setLoanBookDataState(savedLoanBooks);
