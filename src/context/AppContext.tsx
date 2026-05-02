@@ -8,7 +8,7 @@ import {
   MonitoringData, LoanBookUploadMeta, TransactionType, SecuritisationStructure,
 } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { NBFI_SEEDS, getAllSeedLoanBooks } from '@/lib/seedTransactions';
+import { NBFI_SEEDS, getAllSeedLoanBooks, SEED_VERSION, TRANSACTION_MAP } from '@/lib/seedTransactions';
 
 import inputTemplateData from '../../data/input-template.json';
 import nbfiOutputData from '../../data/nbfi-output.json';
@@ -148,9 +148,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lsSet(LS_NBFIS, savedNbfis);
     }
 
-    if (Object.keys(savedLoanBooks).length === 0) {
-      savedLoanBooks = getAllSeedLoanBooks();
+    // Always ensure all seed transactions are present; force refresh when SEED_VERSION changes.
+    // Preserves user-uploaded data (UUID keys) while hydrating all seed transaction keys.
+    const savedSeedVersion = localStorage.getItem('wl-seed-version');
+    const allSeedTxIds = Object.values(TRANSACTION_MAP).flat();
+    const seedBooks = getAllSeedLoanBooks();
+    const needsReseed = savedSeedVersion !== SEED_VERSION ||
+      allSeedTxIds.some(txId => !savedLoanBooks[txId]);
+    if (needsReseed) {
+      savedLoanBooks = { ...savedLoanBooks, ...seedBooks };
       lsSet(LS_LOAN_BOOK, savedLoanBooks);
+      localStorage.setItem('wl-seed-version', SEED_VERSION);
     }
 
     setNbfisState(savedNbfis);
