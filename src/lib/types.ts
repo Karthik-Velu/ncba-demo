@@ -157,6 +157,8 @@ export interface CashFlowSection {
 // Loan-level / Portfolio EDA Types
 // ============================================================
 
+export type ClimateCategory = 'positive' | 'resilient' | 'vulnerable' | null;
+
 export interface LoanLevelRow {
   loanId: string;
   applicationId: string;
@@ -174,6 +176,7 @@ export interface LoanLevelRow {
   segment?: string;
   borrowerName?: string;
   residualTenureMonths?: number;
+  climateCategory?: ClimateCategory;
 }
 
 export function getDpdBucket(dpd: number): string {

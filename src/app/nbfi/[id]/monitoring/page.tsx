@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { LoanLevelRow } from '@/lib/types';
 import {
   Activity, Users, Banknote, TrendingDown,
-  Target, Layers, Building2, Download, X, AlertTriangle, Shield, Gauge, ArrowDownRight, FileCheck, Lock,
+  Target, Layers, Building2, Download, X, AlertTriangle, Shield, Gauge, ArrowDownRight, FileCheck, Lock, Leaf,
 } from 'lucide-react';
 import { getDpdBucket, DPD_BUCKETS } from '@/lib/types';
 import Link from 'next/link';
@@ -27,9 +27,11 @@ import {
 } from '@/lib/rollRate';
 import { TRANSACTION_MAP, TRANSACTION_NAMES, getNbfiIdForTransaction } from '@/lib/seedTransactions';
 import { applyPoolSelection, applyPoolSelectionForPortfolio } from '@/lib/poolSelection';
+import ImpactDashboard from '@/components/ImpactDashboard';
 
 const COLORS = ['#003366', '#0066cc', '#0099ff', '#00ccff', '#66e0ff', '#339966', '#cc6633'];
 type MonScope = 'transaction' | 'nbfi' | 'portfolio';
+type MonTab = 'risk' | 'impact';
 type LoanWithNbfi = LoanLevelRow & { _nbfiId?: string; _txId?: string };
 type TrendPeriod = '3M' | '6M' | '12M';
 
@@ -97,6 +99,7 @@ export default function MonitoringPage() {
   const params = useParams();
   const id = params.id as string;
   const [scope, setScope] = useState<MonScope>('transaction');
+  const [activeTab, setActiveTab] = useState<MonTab>('risk');
   const [viewMode, setViewMode] = useState<'overall' | 'security_package'>('overall');
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('12M');
   const [filterProduct, setFilterProduct] = useState<string[]>([]);
@@ -250,6 +253,34 @@ export default function MonitoringPage() {
             <button onClick={() => setViewMode('security_package')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'security_package' ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Lock className="w-3 h-3" /> Security Package</button>
           </div>
         </div>
+        {/* Risk | Impact tab switcher */}
+        <div className="flex border-b border-gray-200 mb-4">
+          <button
+            onClick={() => setActiveTab('risk')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'risk'
+                ? 'border-[#003366] text-[#003366]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" /> Risk
+          </button>
+          <button
+            onClick={() => setActiveTab('impact')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'impact'
+                ? 'border-[#003366] text-[#003366]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Leaf className="w-3.5 h-3.5" /> Impact
+          </button>
+        </div>
+
+        {activeTab === 'impact' ? (
+          <ImpactDashboard loans={effectiveRows} scope={scope} nbfiName={nbfi.name} />
+        ) : (<>
+
         {viewMode === 'security_package' && !hasConfirmedPool && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-700">No confirmed security package for this scope. Showing overall portfolio data.</div>
         )}
@@ -452,6 +483,8 @@ export default function MonitoringPage() {
             </div>
           </>)}
         </>) : <div className="text-center py-20 text-gray-400">No loan data available for this view. Upload a loan book to see analytics.</div>}
+
+        </>)}
       </main>
     </div>
   );
