@@ -2,7 +2,7 @@ import type { LoanLevelRow } from './types';
 import baseLoanBook from '../../data/mock-loan-book.json';
 
 // Increment when product mix or generation logic changes to force re-seed
-export const SEED_VERSION = 'v2';
+export const SEED_VERSION = 'v3';
 
 const GEOGRAPHIES = ['Nairobi', 'Mombasa', 'Nakuru', 'Kisumu', 'Eldoret', 'Nyeri', 'Thika', 'Machakos', 'Malindi', 'Kitale'];
 const PRODUCTS = ['Boda-Boda', 'Agri-Finance', 'Check-off', 'SACCO', 'MSME', 'Personal', 'SME Trade', 'EV', 'Solar-Home', 'Solar-Pump'];
@@ -36,16 +36,16 @@ export interface NBFISeed {
 }
 
 export const NBFI_SEEDS: NBFISeed[] = [
-  { id: 'seed-1', name: 'Apex Finance Limited', keyContacts: 'John Mwangi (CEO), Alice Wanjiku (CFO)', fundingAmount: 150000000, description: 'Established MFI operating in Central Kenya with focus on agricultural lending.', status: 'monitoring', dateOnboarded: '2024-08-15', loanCount: 520 },
-  { id: 'seed-2', name: 'Horizon Microfinance', keyContacts: 'Peter Njoroge (MD)', fundingAmount: 200000000, description: 'Leading MFI in East Africa with nationwide branch network.', status: 'monitoring', dateOnboarded: '2024-11-01', loanCount: 410 },
-  { id: 'seed-3', name: 'Savanna Womens Trust', keyContacts: 'Grace Muthoni (CEO), Jane Akinyi (CFO)', fundingAmount: 120000000, description: 'Focused on women-led enterprises across Kenya.', status: 'monitoring', dateOnboarded: '2024-09-20', loanCount: 380 },
-  { id: 'seed-4', name: 'Crestline Credit', keyContacts: 'Samuel Karanja (CEO)', fundingAmount: 180000000, description: 'Consumer lending institution with payroll and check-off products.', status: 'monitoring', dateOnboarded: '2024-07-10', loanCount: 620 },
-  { id: 'seed-5', name: 'Bridgepoint Microfinance', keyContacts: 'David Mutai (MD), Esther Korir (CFO)', fundingAmount: 90000000, description: 'Community-focused microfinance serving rural Kenya.', status: 'monitoring', dateOnboarded: '2025-01-15', loanCount: 280 },
-  { id: 'seed-6', name: 'Uplift Microfinance', keyContacts: 'James Wahome (CEO)', fundingAmount: 75000000, description: 'Small-ticket lender targeting bodaboda and agri-finance segments.', status: 'monitoring', dateOnboarded: '2025-02-01', loanCount: 340 },
-  { id: 'seed-7', name: 'Metro Microfinance', keyContacts: 'Patrick Ngethe (MD)', fundingAmount: 130000000, description: 'Urban-focused MFI with SME trade and personal loan products.', status: 'setup_complete', dateOnboarded: '2025-03-10', loanCount: 450 },
-  { id: 'seed-8', name: 'Greenfield Microfinance', keyContacts: 'Mary Njeri (CEO), Michael Githinji (CFO)', fundingAmount: 110000000, description: 'Faith-based MFI serving SMEs and entrepreneurs in Western Kenya.', status: 'monitoring', dateOnboarded: '2024-10-05', loanCount: 310 },
-  { id: 'seed-9', name: 'NovaPay Kenya', keyContacts: 'Tom Oduor (CEO)', fundingAmount: 160000000, description: 'Digital-first microfinance with mobile money disbursement.', status: 'monitoring', dateOnboarded: '2024-12-01', loanCount: 480 },
-  { id: 'seed-10', name: 'PanAfrica Lending Group', keyContacts: 'Diana Kamau (MD)', fundingAmount: 250000000, description: 'Pan-African lending group with government and private sector check-off.', status: 'monitoring', dateOnboarded: '2024-06-20', loanCount: 550 },
+  { id: 'seed-1', name: 'Apex Finance Limited', keyContacts: 'John Mwangi (CEO), Alice Wanjiku (CFO)', fundingAmount: 750000000, description: 'Established MFI operating in Central Kenya with focus on agricultural lending.', status: 'monitoring', dateOnboarded: '2024-08-15', loanCount: 5200 },
+  { id: 'seed-2', name: 'Horizon Microfinance', keyContacts: 'Peter Njoroge (MD)', fundingAmount: 1000000000, description: 'Leading MFI in East Africa with nationwide branch network.', status: 'monitoring', dateOnboarded: '2024-11-01', loanCount: 4500 },
+  { id: 'seed-3', name: 'Savanna Womens Trust', keyContacts: 'Grace Muthoni (CEO), Jane Akinyi (CFO)', fundingAmount: 600000000, description: 'Focused on women-led enterprises across Kenya.', status: 'monitoring', dateOnboarded: '2024-09-20', loanCount: 4200 },
+  { id: 'seed-4', name: 'Crestline Credit', keyContacts: 'Samuel Karanja (CEO)', fundingAmount: 900000000, description: 'Consumer lending institution with payroll and check-off products.', status: 'monitoring', dateOnboarded: '2024-07-10', loanCount: 5800 },
+  { id: 'seed-5', name: 'Bridgepoint Microfinance', keyContacts: 'David Mutai (MD), Esther Korir (CFO)', fundingAmount: 450000000, description: 'Community-focused microfinance serving rural Kenya.', status: 'monitoring', dateOnboarded: '2025-01-15', loanCount: 3500 },
+  { id: 'seed-6', name: 'Uplift Microfinance', keyContacts: 'James Wahome (CEO)', fundingAmount: 375000000, description: 'Small-ticket lender targeting bodaboda and agri-finance segments.', status: 'monitoring', dateOnboarded: '2025-02-01', loanCount: 4000 },
+  { id: 'seed-7', name: 'Metro Microfinance', keyContacts: 'Patrick Ngethe (MD)', fundingAmount: 650000000, description: 'Urban-focused MFI with SME trade and personal loan products.', status: 'setup_complete', dateOnboarded: '2025-03-10', loanCount: 5000 },
+  { id: 'seed-8', name: 'Greenfield Microfinance', keyContacts: 'Mary Njeri (CEO), Michael Githinji (CFO)', fundingAmount: 550000000, description: 'Faith-based MFI serving SMEs and entrepreneurs in Western Kenya.', status: 'monitoring', dateOnboarded: '2024-10-05', loanCount: 4000 },
+  { id: 'seed-9', name: 'NovaPay Kenya', keyContacts: 'Tom Oduor (CEO)', fundingAmount: 800000000, description: 'Digital-first microfinance with mobile money disbursement.', status: 'monitoring', dateOnboarded: '2024-12-01', loanCount: 5200 },
+  { id: 'seed-10', name: 'PanAfrica Lending Group', keyContacts: 'Diana Kamau (MD)', fundingAmount: 1250000000, description: 'Pan-African lending group with government and private sector check-off.', status: 'monitoring', dateOnboarded: '2024-06-20', loanCount: 6200 },
 ];
 
 export const TRANSACTION_MAP: Record<string, string[]> = {
@@ -111,7 +111,7 @@ function assignDpd(rng: () => number, profile: HealthProfile): number {
 function generateLoanBook(txId: string, nbfiSeed: NBFISeed, trancheIdx: number): LoanLevelRow[] {
   const numericSeed = txId.split('').reduce((s, c) => s + c.charCodeAt(0), 0) + trancheIdx * 1000;
   const rng = seededRandom(numericSeed);
-  const count = trancheIdx === 0 ? Math.min(nbfiSeed.loanCount, base.length) : Math.floor(nbfiSeed.loanCount * 0.4);
+  const count = trancheIdx === 0 ? nbfiSeed.loanCount : Math.floor(nbfiSeed.loanCount * 0.4);
   const startIdx = Math.floor(rng() * (base.length - 20));
   const profile = NBFI_HEALTH[nbfiSeed.id] || NBFI_HEALTH['seed-1'];
   const productPool = NBFI_PRODUCT_POOL[nbfiSeed.id] || PRODUCTS;
@@ -160,11 +160,9 @@ let _cache: Record<string, LoanLevelRow[]> | null = null;
 export function getAllSeedLoanBooks(): Record<string, LoanLevelRow[]> {
   if (_cache) return _cache;
   const result: Record<string, LoanLevelRow[]> = {};
-  result['seed-1'] = base;
   for (const nbfi of NBFI_SEEDS) {
     const txs = TRANSACTION_MAP[nbfi.id] || [nbfi.id];
     txs.forEach((txId, idx) => {
-      if (txId === 'seed-1') return;
       result[txId] = generateLoanBook(txId, nbfi, idx);
     });
   }

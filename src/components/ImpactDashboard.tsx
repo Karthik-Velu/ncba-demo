@@ -8,7 +8,7 @@ import {
   computeClimateResilientBreakdown,
   computeClimateVulnerableBreakdown,
   computeClimateEWI,
-  computeClimateGeoRecommendations,
+  computeClimateGeoProbabilities,
   computeSocioeconomicMetrics,
   CLIMATE_RISK_ZONES,
   CO2E_FACTORS,
@@ -16,7 +16,7 @@ import {
   CLIMATE_BASELINE_TRAJECTORY,
   KES_TO_USD,
   type ClimateEWI,
-  type ClimateGeoRecommendation,
+  type ClimateGeoProbability,
 } from '@/lib/climateImpact';
 import {
   Leaf, Zap, Shield, Users, MapPin, AlertTriangle, CheckCircle,
@@ -121,48 +121,28 @@ function EwiCard({ ewi }: { ewi: ClimateEWI }) {
   );
 }
 
-function GeoRecCard({ rec, currency }: { rec: ClimateGeoRecommendation; currency: 'KES' | 'USD' }) {
-  const [expanded, setExpanded] = useState(false);
-  const actionStyles = {
-    moratorium:           { badge: 'bg-red-100 text-red-700',    label: 'MORATORIUM',           border: 'border-red-200',   bg: 'bg-red-50' },
-    restructure:          { badge: 'bg-orange-100 text-orange-700', label: 'RESTRUCTURE',        border: 'border-orange-200', bg: 'bg-orange-50' },
-    watchlist:            { badge: 'bg-amber-100 text-amber-700', label: 'WATCHLIST',            border: 'border-amber-200', bg: 'bg-amber-50' },
-    enhanced_monitoring:  { badge: 'bg-blue-100 text-blue-700',   label: 'ENHANCED MONITORING', border: 'border-blue-200',  bg: 'bg-blue-50' },
-  }[rec.actionType];
+function ProbBar({ value, thresholds }: { value: number; thresholds: [number, number] }) {
+  const color = value >= thresholds[1] ? 'bg-red-500' : value >= thresholds[0] ? 'bg-amber-400' : 'bg-green-400';
+  const textColor = value >= thresholds[1] ? 'text-red-700 font-semibold' : value >= thresholds[0] ? 'text-amber-700' : 'text-green-700';
   return (
-    <div className={`rounded-lg border p-3 ${actionStyles.bg} ${actionStyles.border}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <MapPin className="w-3.5 h-3.5 text-gray-600 shrink-0" />
-            <span className="text-xs font-bold text-gray-800">{rec.geo}</span>
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
-              rec.riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-            }`}>{rec.riskLevel} climate risk</span>
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${actionStyles.badge}`}>
-              {actionStyles.label}
-            </span>
-          </div>
-          <p className="text-[10px] text-gray-600 mb-1.5">{rec.upcomingRisk}</p>
-          <div className="flex flex-wrap gap-3 text-[10px] text-gray-500">
-            <span>{rec.affectedLoans.toLocaleString()} loans ({pct(rec.exposurePct)} of portfolio)</span>
-            <span>Balance: {fmtNum(rec.exposureBalance, currency)}</span>
-            <span className={rec.par30 > 10 ? 'text-red-600 font-semibold' : ''}>PAR 30+: {pct(rec.par30)}</span>
-          </div>
-          <p className="text-[10px] text-gray-500 mt-1 font-medium">{rec.season}</p>
-        </div>
-        <button type="button" onClick={() => setExpanded(!expanded)} className="text-gray-400 hover:text-gray-600 shrink-0 mt-0.5">
-          {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
+    <div className="flex items-center gap-1.5">
+      <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[40px]">
+        <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${value}%` }} />
       </div>
-      {expanded && (
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <p className="text-[10px] font-semibold text-gray-700 mb-1">Recommended Action:</p>
-          <p className="text-[10px] text-gray-600 leading-relaxed">{rec.recommendedAction}</p>
-        </div>
-      )}
+      <span className={`text-[10px] font-mono w-7 text-right ${textColor}`}>{value}%</span>
     </div>
   );
+}
+
+function ActionBadge({ actionType }: { actionType: ClimateGeoProbability['actionType'] }) {
+  const styles = {
+    restructure: 'bg-orange-100 text-orange-700',
+    moratorium:  'bg-red-100 text-red-700',
+    watchlist:   'bg-amber-100 text-amber-700',
+    monitor:     'bg-blue-100 text-blue-700',
+  }[actionType];
+  const labels = { restructure: 'Restructure', moratorium: 'Moratorium', watchlist: 'Watchlist', monitor: 'Monitor' };
+  return <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${styles}`}>{labels[actionType]}</span>;
 }
 
 // ---- main component ----
@@ -180,11 +160,11 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
   const resBreakdown  = useMemo(() => computeClimateResilientBreakdown(loans), [loans]);
   const vulBreakdown  = useMemo(() => computeClimateVulnerableBreakdown(loans), [loans]);
   const ewi           = useMemo(() => computeClimateEWI(loans), [loans]);
-  const geoRecs       = useMemo(() => computeClimateGeoRecommendations(loans), [loans]);
+  const geoProbs      = useMemo(() => computeClimateGeoProbabilities(loans), [loans]);
   const socio         = useMemo(() => computeSocioeconomicMetrics(loans), [loans]);
 
   const activeAlerts = ewi.filter(e => e.status !== 'ok').length;
-  const highRiskRecs = geoRecs.filter(r => r.riskLevel === 'high').length;
+  const highRiskRecs = geoProbs.filter(r => r.riskLevel === 'high').length;
 
   const climatePieData = [
     { name: 'Climate Positive', value: climate.positiveCount,    color: CLIMATE_COLORS.positive },
@@ -402,7 +382,7 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
             <h4 className="text-xs font-bold text-[#003366] mb-3">Resilient Sub-Categories</h4>
             <div className="space-y-2.5">
               {[
-                { label: 'Women Secondary Income (Group Agri)', count: resBreakdown.womenAgriCount,   balance: resBreakdown.womenAgriBalance,   color: 'bg-pink-400',  desc: 'Agri-Finance, Group segment — women small-holder proxy' },
+                { label: 'Women Secondary Income (Group Agri)', count: resBreakdown.womenAgriCount,   balance: resBreakdown.womenAgriBalance,   color: 'bg-pink-400',  desc: 'Group Agri (women proxy)' },
                 { label: 'Irrigation Loans (≥ KES 150K Agri)',  count: resBreakdown.irrigationCount,  balance: resBreakdown.irrigationBalance,  color: 'bg-blue-400',  desc: 'Larger Agri-Finance — irrigation infrastructure' },
                 { label: 'Farm Input Loans (< KES 80K Agri)',   count: resBreakdown.farmInputCount,   balance: resBreakdown.farmInputBalance,   color: 'bg-teal-400',  desc: 'Small agri-input finance: seeds, fertilizer' },
                 { label: 'General Agri (KES 80K–150K)',         count: resBreakdown.generalAgriCount, balance: resBreakdown.generalAgriBalance, color: 'bg-green-400', desc: 'Mid-range agri credit' },
@@ -638,8 +618,8 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
               </div>
             </div>
             <InfoBar>
-              <strong>Income multipliers (annual income per KES deployed):</strong><br />
-              Boda-Boda 2.2× · EV 1.8× · MSME 1.5× · SME Trade 1.3× · Solar-Pump 1.2× · Agri-Finance 0.85× · SACCO 0.6× · Solar-Home 0.25× · Check-off 0.3×<br />
+              <strong>Income multipliers (additional annual income per KES deployed, conservative CGAP/IFC proxies):</strong><br />
+              Boda-Boda 1.2× · EV 1.0× · MSME 0.8× · SME Trade 0.6× · Solar-Pump 0.6× · Agri-Finance 0.4× · SACCO 0.3× · Solar-Home 0.15× · Check-off 0.15×<br />
               <strong>NTC proxy:</strong> Individual or Group segment with loan &lt; KES 15,000 — first-time micro-credit access.<br />
               <strong>Micro-entrepreneur proxy:</strong> MSME product or Enterprise segment with loan &lt; KES 200,000.<br />
               <strong>Jobs proxy:</strong> MSME/Enterprise 1.8 jobs/loan; Boda-Boda/EV 1.0; Agri-Finance 1.2; Solar-Pump 1.3; others 0.5.<br />
@@ -668,9 +648,10 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
           )}
         </div>
         <p className="text-[10px] text-gray-500 mb-3">
-          Portfolio-level risk indicators and geography-specific predictive signals with recommended actions.
+          Portfolio-level risk indicators computed from loan performance data, combined with a geography-level
+          climate probability matrix derived from historical climate variables and seasonal forecasts.
           Indicators marked <span className="bg-gray-200 text-gray-500 px-1 rounded text-[9px] font-medium">SIMULATED</span> use
-          deterministic proxies pending live seasonal baseline data.
+          deterministic proxies pending live baseline data feeds.
         </p>
 
         {/* Climate risk zone legend */}
@@ -694,30 +675,84 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
           </div>
         </div>
 
-        {/* Geography-specific predictions and action recommendations */}
-        {geoRecs.length > 0 && (
+        {/* Geography-specific climate probability matrix */}
+        {geoProbs.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="w-3.5 h-3.5 text-gray-600" />
               <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">
-                Geography-Specific Predictions & Recommended Actions
+                Geography Risk Probability Matrix
               </p>
-              <span className="text-[10px] text-gray-400 italic">(As of April 2026 — upcoming risk periods)</span>
             </div>
             <p className="text-[10px] text-gray-500 mb-3">
-              Forward-looking signals based on Kenya seasonal calendar. Recommendations are pre-emptive — act before climate events occur to protect genuine borrowers. Expand each card to see specific actions.
+              12-month rolling probability scores derived from historical climate variables (IGAD, CHIRPS, ESA CCI, IRI seasonal forecasts).
+              Composite score drives the recommended portfolio action. Scores are adjusted upward when agri PAR exceeds portfolio baseline.
             </p>
-            <div className="space-y-2.5">
-              {geoRecs.map(rec => (
-                <GeoRecCard key={rec.geo} rec={rec} currency={currency} />
-              ))}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b text-gray-500 uppercase text-[9px]">
+                    <th className="text-left px-3 py-2">Geography</th>
+                    <th className="text-right px-3 py-2">Loans</th>
+                    <th className="text-right px-3 py-2">Exposure</th>
+                    <th className="text-right px-3 py-2">PAR 30+</th>
+                    <th className="px-3 py-2">Drought</th>
+                    <th className="px-3 py-2">Flood</th>
+                    <th className="px-3 py-2">Crop Failure</th>
+                    <th className="text-center px-3 py-2">Composite</th>
+                    <th className="text-center px-3 py-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {geoProbs.map(g => (
+                    <tr key={g.geo} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">{g.geo}</span>
+                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full uppercase ${
+                            g.riskLevel === 'high' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                          }`}>{g.riskLevel}</span>
+                        </div>
+                        <p className="text-[9px] text-gray-400 mt-0.5 max-w-[140px] truncate" title={g.keyVariables.join(' · ')}>
+                          {g.keyVariables[0]}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-700">{g.affectedLoans.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-gray-700">{fmtNum(g.exposureBalance, currency)}</td>
+                      <td className={`px-3 py-2 text-right ${g.par30 > 15 ? 'text-red-600 font-semibold' : g.par30 > 10 ? 'text-amber-600' : 'text-gray-600'}`}>
+                        {pct(g.par30)}
+                      </td>
+                      <td className="px-3 py-2 w-28"><ProbBar value={g.droughtProbability} thresholds={[25, 40]} /></td>
+                      <td className="px-3 py-2 w-28"><ProbBar value={g.floodProbability} thresholds={[25, 40]} /></td>
+                      <td className="px-3 py-2 w-28"><ProbBar value={g.cropFailureProbability} thresholds={[25, 40]} /></td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`text-sm font-bold ${
+                          g.compositeScore >= 45 ? 'text-red-600' : g.compositeScore >= 35 ? 'text-orange-600' :
+                          g.compositeScore >= 25 ? 'text-amber-600' : 'text-green-600'
+                        }`}>{g.compositeScore}</span>
+                        {g.stressAdjustment > 0 && (
+                          <p className="text-[8px] text-gray-400">+{g.stressAdjustment}% stress adj.</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center"><ActionBadge actionType={g.actionType} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="px-3 py-2 bg-gray-50 border-t border-gray-100">
+                <p className="text-[9px] text-gray-400">
+                  Composite score = 0.35 × max(drought, flood) + 0.40 × crop failure + 0.25 × max(all three).
+                  Thresholds: ≥45 restructure · ≥35 moratorium · ≥25 watchlist · &lt;25 monitor.
+                  Sources: IGAD Climate Prediction & Applications Centre, CHIRPS v2.0, ESA CCI Soil Moisture, IRI Seasonal Forecasts.
+                </p>
+              </div>
             </div>
-            <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
-              <strong>Note:</strong> Geographies not represented in the current portfolio scope are not shown. Filter scope to Portfolio to see full network exposure. Climate seasonal data is proxy-based on historical IGAD/Kenya Meteorological Department records. Actual event occurrence requires real-time data integration.
+            <p className="text-[10px] text-gray-400 mt-2">
+              Only geographies present in the current portfolio scope are shown. Switch to Portfolio scope for full network coverage.
             </p>
           </div>
         )}
-        {geoRecs.length === 0 && (
+        {geoProbs.length === 0 && (
           <p className="text-[10px] text-gray-400 italic">No high or medium risk geographies detected in the current loan scope.</p>
         )}
       </div>
