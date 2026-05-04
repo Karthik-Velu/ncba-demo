@@ -8,7 +8,7 @@ import Link from 'next/link';
 import {
   Plus, ChevronRight, Building2, TrendingUp, Trash2,
   AlertTriangle, CheckCircle2, Shield, Banknote, Users,
-  FileText, Activity, Wifi,
+  FileText, Activity, Wifi, Layers, ArrowRight,
 } from 'lucide-react';
 import type { NBFIRecord } from '@/lib/types';
 import { TRANSACTION_MAP } from '@/lib/seedTransactions';
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       <main className="flex-1 p-8 bg-gray-50">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">NBFI Risk Infrastructure</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Originator Risk Infrastructure</h1>
             <p className="text-sm text-gray-500 mt-1">Portfolio-level overview and originator management</p>
           </div>
           <Link
@@ -117,13 +117,41 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#003366] text-white rounded-lg hover:bg-[#004d99] transition-colors text-sm font-medium shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            Onboard New NBFI
+            Onboard Originator
           </Link>
         </div>
 
+        {/* Portfolio Monitor CTA */}
+        {portfolioSummary.activeNbfis > 0 && (() => {
+          const firstActiveId = nbfis.find(n => ['monitoring', 'setup_complete', 'approved', 'pool_selected'].includes(n.status))?.id ?? nbfis[0]?.id;
+          if (!firstActiveId) return null;
+          return (
+            <Link
+              href={`/nbfi/${firstActiveId}/monitoring?scope=portfolio`}
+              className="group flex items-center justify-between gap-4 mb-5 px-5 py-4 bg-gradient-to-r from-[#003366] to-[#0055aa] rounded-xl shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <Layers className="w-4.5 h-4.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Full Portfolio Monitor</p>
+                  <p className="text-xs text-blue-200 mt-0.5">
+                    {portfolioSummary.activeNbfis} active originators · {portfolioSummary.totalLoans.toLocaleString()} loans · {formatKES(portfolioSummary.totalLoanBookBalance)} book
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 px-4 py-2 bg-white/10 group-hover:bg-white/20 rounded-lg transition-colors shrink-0">
+                <span className="text-xs font-semibold text-white">View Portfolio</span>
+                <ArrowRight className="w-3.5 h-3.5 text-white" />
+              </div>
+            </Link>
+          );
+        })()}
+
         {/* Portfolio Summary Cards */}
         <div className="grid grid-cols-5 gap-3 mb-6">
-          <SummaryCard icon={<Building2 className="w-4 h-4 text-blue-500" />} label="Total NBFIs" value={String(stats.total)} />
+          <SummaryCard icon={<Building2 className="w-4 h-4 text-blue-500" />} label="Total Originators" value={String(stats.total)} />
           <SummaryCard icon={<Activity className="w-4 h-4 text-green-500" />} label="Active" value={String(portfolioSummary.activeNbfis)} />
           <SummaryCard icon={<Banknote className="w-4 h-4 text-indigo-500" />} label="Total Exposure" value={formatKES(portfolioSummary.totalExposure)} />
           <SummaryCard icon={<AlertTriangle className="w-4 h-4 text-red-500" />} label="Covenants Breached" value={String(portfolioSummary.breachedCovenantCount)} accent={portfolioSummary.breachedCovenantCount > 0 ? 'red' : undefined} />
@@ -135,7 +163,7 @@ export default function DashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">NBFI</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Originator</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Exposure</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loan Book</th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAR 30+</th>
@@ -262,7 +290,7 @@ export default function DashboardPage() {
               {nbfis.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-6 py-12 text-center text-gray-400 text-sm">
-                    No NBFIs onboarded yet. Click &ldquo;Onboard New NBFI&rdquo; to get started.
+                    No originators onboarded yet. Click &ldquo;Onboard Originator&rdquo; to get started.
                   </td>
                 </tr>
               )}
