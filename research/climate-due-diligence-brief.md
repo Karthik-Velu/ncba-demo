@@ -6,11 +6,20 @@
 
 ---
 
+> **[REVISED]**
+
 ## Executive Summary
 
-This brief describes the climate monitoring, early warning, and growth intelligence capabilities of ki monitor — a loan-level portfolio intelligence platform — as they apply to the fund structure under guarantee review. The platform classifies every loan in the underlying portfolio against a proprietary three-tier climate taxonomy aligned to MDB/IDFC Common Principles, tracks CO₂e avoidance at the loan level, surfaces climate early warning indicators (EWIs) to both investors and originators, and identifies climate growth opportunities across the originator network.
+This brief describes the climate intelligence capabilities of ki monitor — a loan-level portfolio intelligence platform — as they apply to the fund structure under guarantee review. The platform is designed around a core principle that aligns with BII's Paris-aligned investment strategy: that climate risk management and climate impact generation are not competing objectives but mutually reinforcing ones. A portfolio that anticipates and manages climate stress protects the capital that enables more climate finance to flow to underserved borrowers.
 
-The fund's climate performance is visible in real time. When a climate stress event occurs — a drought in Machakos, flooding in Kisumu — the platform detects the signal in repayment behaviour before it reaches covenant breach level, and surfaces differentiated actions to each user type.
+The platform delivers this across four capabilities:
+
+1. **Climate taxonomy**: every loan classified against MDB/IDFC Common Principles — Positive (mitigation), Resilient (adaptation), or Vulnerable — with loan-level CO₂e tracking
+2. **Predictive Early Warning**: a two-tier EWI system combining external climate forecasts (seasonal rainfall probability, vegetation stress, ENSO phase) with portfolio-level performance signals — detecting climate stress 2–6 months before it reaches the loan book
+3. **Differentiated user actions**: the investor sees portfolio-level risk and deployment signals; the originator sees borrower-level actions to protect climate-vulnerable borrowers proactively
+4. **Climate growth intelligence**: identifying where more climate finance can be deployed safely — new originators, product expansion, and capital deployment targeting aligned to Paris commitments
+
+> **[END REVISED]**
 
 ---
 
@@ -67,52 +76,109 @@ Climate-vulnerable borrowers are reported separately so the guarantee provider c
 
 ---
 
+> **[REVISED]**
+
 ## 2. Early Warning Indicators (EWI)
 
-The platform runs four leading climate EWIs continuously against the loan-level book. These indicators fire before a covenant breach — giving both the investor and the originator time to act.
+The platform's EWI system is structured across two tiers. **Tier 1** uses external climate science data to predict stress 2–6 months before it reaches the loan book. **Tier 2** uses loan-level performance data to confirm that a climate event is translating into borrower behaviour and calibrate the severity. Together they close the loop from climate prediction through to portfolio response.
 
-### 2.1 The Four EWI Indicators
+This distinction matters for the guarantee provider: by the time a portfolio metric deteriorates, the response window has narrowed significantly. Tier 1 indicators create the lead time needed for originators to engage at-risk borrowers, restructure exposures, and deploy protective measures before defaults accumulate.
 
-**1. Geographic Concentration in High-Risk Zones**
-Measures the share of the portfolio in drought- and flood-prone regions (Kisumu, Eldoret, Machakos). Status thresholds: Watch at >35%, Alert at >55% of the portfolio. Elevated concentration means that a single climate event can affect correlated borrower repayment across multiple originators simultaneously — the central systemic risk for this fund.
+---
 
-**2. Seasonal Repayment Deviation**
-Tracks agri-finance PAR 30+ against a harvest-adjusted seasonal baseline (April = main harvest month). When repayment stress exceeds the seasonal norm, it is a leading signal of a localised climate event or delayed harvest before that stress propagates into loan delinquency at scale.
+### Tier 1 — Climate Lead Indicators
+*Predict stress before it reaches the portfolio. Source: external climate science data feeds.*
 
-**3. Crop Cycle Alignment**
-Compares agri-loan performance to the Kenya harvest calendar (main harvest: March–May). If agri loans are underperforming the overall portfolio during the expected harvest income period, this may indicate rainfall anomaly or crop failure in specific geographic corridors.
+**L1 — Seasonal Rainfall Forecast**
 
-**4. Portfolio Migration Toward Climate-Exposed Segments**
-Tracks the 3-month growth rate in the climate-vulnerable share of new origination. A rising vulnerable share is not automatically a problem — but it is a leading indicator of structural exposure drift that the guarantee provider should monitor against the fund's stated climate risk appetite.
+The platform ingests IRI / NOAA probabilistic seasonal rainfall forecasts, which are published 1–3 months before each agricultural season. These forecasts express the probability of below-normal, near-normal, or above-normal rainfall for the coming 3-month period across East African geographies.
 
-Each EWI displays a status: **OK / Watch / Alert**, with the underlying metric value, a plain-English interpretation, and the data sources driving the calculation.
+The indicator fires when the probability of below-normal rainfall exceeds 55% in a geography that carries more than 10% of the portfolio's outstanding balance. This gives the investor and the relevant originators a full growing season of lead time to prepare — before a single loan shows delinquency.
+
+*Status thresholds:* Watch when P(below-normal) is 45–55% in a high-exposure geography. Alert when P(below-normal) > 55%.
+
+**L2 — In-Season Vegetation and Rainfall Stress**
+
+During the active growing season, the platform tracks two complementary signals from satellite and remote sensing data:
+
+- **CHIRPS rainfall anomaly**: current-season cumulative rainfall vs. the long-run seasonal baseline for each geography. A deficit of more than 1 standard deviation below baseline during the growing season is a reliable predictor of reduced harvest yield 6–10 weeks later.
+- **NDVI anomaly (NASA MODIS)**: the Normalised Difference Vegetation Index measures actual crop canopy development relative to the seasonal norm. An NDVI anomaly below -0.05 during the critical growth window indicates likely crop stress regardless of whether rainfall data has yet signalled the problem — it is what the plants are actually doing.
+
+When either signal fires in a geography carrying material portfolio exposure, originators in that geography are notified to begin proactive borrower outreach, and the guarantee provider sees the geographic flag on the investor dashboard.
+
+*Status thresholds:* Watch when CHIRPS deficit is 0.5–1.0σ below baseline or NDVI anomaly is -0.03 to -0.05. Alert when CHIRPS is >1.0σ below or NDVI anomaly is below -0.05.
+
+**L3 — ENSO Phase Alignment**
+
+El Niño–Southern Oscillation (ENSO) phase is forecast reliably 3–6 months in advance by NOAA CPC and has well-documented, asymmetric impacts across Kenya's agricultural zones:
+
+- **La Niña**: elevated rainfall and flood risk in Lake Victoria basin (Kisumu) and coastal zones (Mombasa). Agri-finance and MSME borrowers in these areas face input loss and transport disruption even as total rainfall increases.
+- **El Niño**: suppressed long-rains in eastern and highland Kenya (Machakos, Eldoret). Drought stress drives crop failure and smallholder income collapse 3–5 months after an El Niño signal is confirmed.
+- **Neutral phase**: baseline climate risk; no ENSO adjustment applied.
+
+The platform cross-references the current and forecast ENSO phase against the fund's geographic exposure map and adjusts the composite climate risk scores in the Geography Risk Matrix accordingly. This means the risk matrix reflects where the climate is heading, not just where it has historically been.
+
+*Status thresholds:* Watch when ENSO is moving into La Niña or El Niño phase with a geography exposure >15% of portfolio. Alert when a strong La Niña or El Niño event is forecast with confirmed signal.
+
+---
+
+### Tier 2 — Portfolio Response Indicators
+*Confirm the climate signal is reaching the loan book. Source: loan-level portfolio data.*
+
+**P1 — Collection Efficiency in Climate-Exposed Geographies**
+
+Collection efficiency — the ratio of actual collections received to scheduled collections due in a given period — is the most repayment-structure-agnostic measure of borrower stress available. Unlike PAR 30+, it does not penalise harvest-aligned repayment schedules where payments are intentionally deferred during the growing season; it measures whether borrowers are paying what is due *when* it is due.
+
+The indicator compares collection efficiency in geographies flagged by Tier 1 against the portfolio-level baseline. A meaningful divergence — geographies with active climate signals showing collections 5–10 percentage points below the portfolio average — confirms that the climate event is translating into financial stress. This is the signal that moves recommended borrower actions from watchlist to restructuring or moratorium.
+
+*Status thresholds:* Watch when flagged-geography collection efficiency falls 5pp below portfolio baseline. Alert when divergence exceeds 10pp.
+
+**P2 — Portfolio Concentration in Active Climate Risk Zones**
+
+This indicator measures the share of outstanding portfolio balance in geographies where Tier 1 indicators are currently elevated — combining static historical risk classification with the live forecast signal. A geography that is historically high-risk but currently in a neutral ENSO phase with normal rainfall forecasts carries different active risk than the same geography during a confirmed El Niño.
+
+Weighting exposure by active climate probability (rather than historical category alone) gives the guarantee provider a more accurate picture of correlated risk at any given moment. Elevated concentration with active climate signals is the central systemic risk scenario for the guarantee.
+
+*Status thresholds:* Watch when active-risk-weighted concentration exceeds 35% of portfolio. Alert above 50%.
+
+**P3 — Climate Finance Share Trajectory**
+
+For a Paris-aligned fund, the direction of travel of the climate-positive and climate-resilient share of origination is as important as its current level. This indicator tracks the month-on-month change in the climate-classified share of new disbursements across the originator network.
+
+A declining trajectory — even from a high starting point — is an early signal that the fund's climate thesis is being diluted by the product mix of new lending. Conversely, a growing trajectory demonstrates that the fund's guarantee structure is working as intended: enabling originators to extend more climate finance with confidence. This is the indicator most directly relevant to Paris alignment reporting.
+
+*Status thresholds:* Watch when climate share has declined for two consecutive months. Alert when climate share has declined more than 5pp over a rolling quarter.
+
+---
 
 ### 2.2 Investor View
 
-When an investor logs into ki monitor, the EWI dashboard provides:
+When an investor logs into ki monitor, the EWI dashboard integrates both tiers into a single portfolio intelligence view:
 
-- **Portfolio health overview**: current status across all four EWI indicators, with trend lines showing direction of travel
-- **Geographic risk heat map**: which geographies within the portfolio are accumulating climate stress, with composite risk scores (drought probability, flood probability, crop-failure probability) derived from IGAD, CHIRPS v2.0, ESA CCI Soil Moisture, and IRI Seasonal Forecasts
-- **EWI-driven actions**: for each alert that fires, the platform surfaces the recommended portfolio-level response — whether to request restructuring from specific originators, flag a moratorium zone, or escalate to watchlist monitoring
-- **Capital deployment signals**: where in the network climate risk is low and originator capacity exists to absorb additional disbursements — supporting active portfolio rebalancing away from high-concentration geographies
-- **High-risk area identification**: clear flagging of geographies approaching concentration thresholds, with originator-level exposure breakdown, so the investor can engage the right counterparty with the right information
+- **Tier 1 climate signals panel**: current status of the three lead indicators — seasonal rainfall forecast, in-season vegetation stress, and ENSO phase — with geographic exposure mapped against each active signal. This answers the question: *what climate events are coming and where is the portfolio exposed?*
+- **Tier 2 portfolio response panel**: collection efficiency by geography, active-risk-weighted concentration, and climate finance share trend — showing whether earlier signals have reached the book and whether the portfolio is on track against its climate targets
+- **EWI-driven portfolio actions**: when Tier 1 and Tier 2 signals align in the same geography, the platform surfaces recommended responses — engaging specific originators, flagging moratorium zones, or rebalancing deployment toward lower-risk geographies
+- **Capital deployment signals**: where Tier 1 signals are benign and originator capacity exists, the platform identifies opportunities to accelerate climate-positive disbursements — supporting the fund's growth objectives alongside its risk management ones
+- **Impact trajectory**: the climate finance share trend (P3) is prominently displayed as the fund's primary Paris alignment indicator
 
-The investor view is designed for portfolio-level decision-making: where to deploy more capital, where to pull back, and which originators require direct engagement.
+The investor view is designed for portfolio-level decision-making that serves both the fund's risk and impact mandates simultaneously.
 
 ### 2.3 Originator View
 
-When an originator logs into ki monitor, the EWI output is translated into borrower-facing actions:
+When an originator logs into ki monitor, the EWI output is translated into borrower-facing actions relevant to their specific book:
 
-- **At-risk geography and segment identification**: which districts or borrower segments within their own book are showing early signs of climate-related repayment stress, cross-referenced with the climate geography risk matrix
-- **Borrower-level action recommendations**: for each flagged geography, the platform recommends an action type based on the composite climate score:
-  - **Restructure** (composite score ≥ 45): proactive loan restructuring for borrowers in highest-stress zones before default
-  - **Moratorium** (composite score ≥ 35): temporary repayment moratorium for borrowers in identified flood or drought corridors
-  - **Watchlist** (composite score ≥ 25): enhanced monitoring and borrower contact cadence
-  - **Monitor** (composite score < 25): standard monitoring with elevated climate awareness
-- **Seasonal context**: disbursement and collection timing recommendations aligned to Kenya's agricultural calendar, reducing avoidable climate-driven delinquency
-- **End-borrower engagement prompts**: for originators operating group lending models, the platform surfaces which groups in high-risk zones warrant proactive field officer visits
+- **Active climate signal alerts**: which geographies in their portfolio are currently flagged by Tier 1 indicators, with the underlying forecast data (e.g., "IRI forecast: 62% probability of below-normal short-rains in Machakos — season begins October")
+- **Borrower-level action recommendations**: for each flagged geography, the platform recommends a response scaled to the combined Tier 1 and Tier 2 signal strength:
+  - **Restructure** (strong Tier 1 signal + Tier 2 collection efficiency Alert): proactive loan restructuring for borrowers in highest-stress zones before default
+  - **Moratorium** (strong Tier 1 signal + Tier 2 Watch): temporary repayment moratorium for borrowers in confirmed drought or flood corridors
+  - **Enhanced engagement** (Tier 1 Watch, Tier 2 within normal range): increased field officer contact and early repayment support before stress materialises
+  - **Monitor** (Tier 1 neutral): standard monitoring with elevated awareness in the season ahead
+- **Seasonal disbursement guidance**: recommendations on timing new agri-finance disbursements to align with planting windows — maximising borrower income alignment and reducing avoidable climate-driven delinquency
+- **End-borrower engagement prompts**: for originators operating group lending models, the platform surfaces which groups in climate-flagged zones warrant proactive field visits, with suggested talking points around crop insurance, alternative income support, and repayment flexibility options
 
-The originator view converts the portfolio-level climate signal into operational, borrower-level actions — closing the loop between climate risk detection and credit management response.
+The originator view closes the loop between external climate prediction and on-the-ground borrower relationship management — the mechanism by which climate risk is actively managed rather than passively absorbed.
+
+> **[END REVISED]**
 
 ---
 
@@ -128,7 +194,7 @@ The platform runs a quantitative climate probability matrix across all geographi
 **Composite score formula:**
 > Composite = 0.35 × max(drought, flood) + 0.40 × crop failure + 0.25 × max(all three)
 
-Composite scores are dynamically adjusted upward when the portfolio's agri-finance PAR 30+ meaningfully exceeds the overall portfolio baseline — reflecting live credit signal amplifying the climate probability estimate. This prevents the matrix from being a static historical snapshot divorced from current portfolio performance.
+Composite scores are dynamically adjusted upward when the portfolio's agri-finance collection efficiency meaningfully falls below the portfolio baseline in that geography — reflecting the live credit signal amplifying the climate probability estimate. This prevents the matrix from being a static historical snapshot divorced from current portfolio performance.
 
 **Sample output (illustrative):**
 
@@ -144,9 +210,13 @@ The matrix is visible to the guarantee provider at both the individual originato
 
 ---
 
+> **[REVISED]**
+
 ## 4. Climate Growth Opportunities
 
-ki monitor is not only a risk management tool — it maps climate opportunity across the originator network. This section is relevant to the guarantee provider's assessment of the fund's ability to grow its climate finance share over time.
+For a Paris-aligned investor, enabling more climate finance to reach underserved markets is as central to the fund's mandate as managing climate risk within it. ki monitor serves both objectives: the risk management capabilities described in Sections 2 and 3 create the confidence needed to deploy more capital into climate-positive and resilient segments, while the growth intelligence capabilities described here identify where and how that capital can be deployed most effectively.
+
+> **[END REVISED]**
 
 ### 4.1 New Originator Identification
 
@@ -194,21 +264,29 @@ In addition to climate classification, the platform tracks the fund's developmen
 
 ---
 
+> **[REVISED]**
+
 ## 6. Reporting and Standards Alignment
 
 | Standard | Coverage |
 |---|---|
+| Paris Agreement (2015) | Fund climate finance trajectory and CO₂e avoidance reporting; alignment with 1.5°C pathway through mitigation and adaptation lending |
 | MDB/IDFC Common Principles for Climate Finance Tracking (Dec 2023) | Climate Positive (mitigation) classification and CO₂e reporting |
 | IPCC AR6 (2022) | Emission factors for fossil fuel displacement |
 | IRENA Kenya Grid Factor (2022) | EV and e-boda grid electricity emission factor (0.48 kgCO₂/kWh) |
 | GOGLA Sector Impact Framework (2023) | Solar home system displacement methodology |
 | IFC Lighting Africa / Solar Irrigation (2022) | Solar-pump diesel displacement methodology |
-| IGAD / CHIRPS v2.0 / ESA CCI / IRI | Geographic climate probability scores |
+| IGAD / CHIRPS v2.0 / ESA CCI / IRI / NOAA CPC | Geographic climate probability scores and Tier 1 EWI lead indicators |
+| NASA MODIS NDVI | In-season vegetation stress indicator (Tier 1 EWI L2) |
 | 2X Women's Initiative | Women-borrower proxy reporting |
 
 The platform is designed so that the guarantee provider can extract loan-level climate classification data for independent third-party verification at any point in the fund's life. All methodology assumptions are disclosed within the platform and in this brief.
 
+> **[END REVISED]**
+
 ---
+
+> **[REVISED]**
 
 ## 7. Summary: What the Guarantee Provider Can Rely On
 
@@ -216,13 +294,16 @@ The platform is designed so that the guarantee provider can extract loan-level c
 |---|---|
 | Real-time climate classification | Every loan classified as Positive, Resilient, Vulnerable, or Unclassified on each portfolio update |
 | MDB-aligned CO₂e reporting | Loan-level avoided emissions, by product type, with disclosed methodology |
-| Four leading EWIs | Geographic concentration, seasonal deviation, crop cycle alignment, portfolio migration — firing before covenant breach |
-| Investor EWI dashboard | Portfolio health, geographic risk heat map, EWI-driven actions, capital deployment signals |
-| Originator EWI dashboard | Borrower-level restructure / moratorium / watchlist / monitor recommendations by geography |
-| Climate geography risk matrix | Quantitative drought / flood / crop-failure probability scores, composite action score, stress-adjusted for live portfolio PAR |
-| Growth opportunity mapping | New originator identification, product expansion signals, capital deployment targeting by climate impact efficiency |
+| Tier 1 — Climate Lead Indicators | Three predictive EWIs using external climate data: seasonal rainfall forecast (IRI/NOAA), in-season vegetation and rainfall stress (CHIRPS + NASA MODIS NDVI), and ENSO phase alignment (NOAA CPC) — firing 2–6 months before portfolio stress materialises |
+| Tier 2 — Portfolio Response Indicators | Three confirmatory EWIs: collection efficiency in climate-exposed geographies, active-risk-weighted geographic concentration, and climate finance share trajectory |
+| Investor EWI dashboard | Integrated Tier 1 + Tier 2 view: climate signals incoming, portfolio response, capital deployment signals, and Paris alignment trajectory |
+| Originator EWI dashboard | Borrower-level restructure / moratorium / enhanced engagement / monitor recommendations, driven by combined Tier 1 forecast and Tier 2 collection efficiency signal |
+| Climate geography risk matrix | Quantitative drought / flood / crop-failure probability scores, composite action score, ENSO-adjusted for current climate conditions |
+| Growth opportunity mapping | New originator identification, product expansion signals, capital deployment targeting by climate impact efficiency — aligned to fund's Paris commitments |
 | Socioeconomic impact tracking | Women borrowers, rural reach, NTC, micro-entrepreneurs — DFI impact framework aligned |
 | Data export | Loan-level climate data exportable for third-party verification |
+
+> **[END REVISED]**
 
 ---
 
