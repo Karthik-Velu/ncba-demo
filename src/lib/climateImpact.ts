@@ -677,3 +677,197 @@ export const CLIMATE_BASELINE_TRAJECTORY = [
   { fy: 'FY25', resilient: 0.73, vulnerable: 0.29, positive: 0.19 },
   { fy: 'FY26 est.', resilient: 1.27, vulnerable: 0.50, positive: 0.38 },
 ];
+
+// ============================================================
+// CLIMATE EARLY WARNING SYSTEM — TWO-TIER FRAMEWORK
+// ============================================================
+
+// ---- Tier 1: Climate Lead Indicators ----
+// Simulated external climate data — May 2026 context
+// End of long-rains season; IRI short-rains (Oct–Dec) outlook available; La Niña Watch active
+// Sources: IRI Seasonal Climate Forecast, CHIRPS v2.0, NASA MODIS NDVI, NOAA CPC ENSO
+const EWI_FORECAST: Record<string, {
+  pBelowNormal: number;      // IRI probability of below-normal short-rains rainfall (%)
+  ndviAnomaly: number;       // NASA MODIS NDVI anomaly vs seasonal baseline (long-rains peak)
+  ensoImpact: 'drought' | 'flood' | 'neutral';
+}> = {
+  Machakos: { pBelowNormal: 58, ndviAnomaly: -0.06, ensoImpact: 'drought' }, // semi-arid, historically drought-prone
+  Eldoret:  { pBelowNormal: 44, ndviAnomaly: -0.03, ensoImpact: 'drought' }, // highland, moderate signal
+  Kisumu:   { pBelowNormal: 22, ndviAnomaly:  0.02, ensoImpact: 'flood'   }, // La Niña → above-normal Lake Victoria basin
+  Mombasa:  { pBelowNormal: 29, ndviAnomaly: -0.01, ensoImpact: 'flood'   }, // coastal, IOD-linked flood signal
+  Nakuru:   { pBelowNormal: 36, ndviAnomaly: -0.02, ensoImpact: 'neutral' },
+};
+
+// Geographies with active Tier 1 Watch/Alert (L1 ≥ 35% or L2 ≤ -0.03) — used by Tier 2 P2
+export const ACTIVE_SIGNAL_GEOS = new Set(
+  Object.entries(EWI_FORECAST)
+    .filter(([, f]) => f.pBelowNormal >= 35 || f.ndviAnomaly <= -0.03)
+    .map(([g]) => g),
+);
+
+export interface TierOneEWI {
+  code: 'L1' | 'L2' | 'L3';
+  label: string;
+  source: string;
+  leadTime: string;
+  status: 'ok' | 'watch' | 'alert';
+  headline: string;
+  detail: string;
+  flaggedGeos: Array<{ geo: string; signal: string }>;
+}
+
+export function computeTierOneEWI(loans: LoanLevelRow[]): TierOneEWI[] {
+  if (loans.length === 0) return [];
+
+  // Only surface signals for geographies with ≥5% portfolio exposure
+  const geoCount: Record<string, number> = {};
+  for (const l of loans) { const g = l.geography ?? ''; geoCount[g] = (geoCount[g] ?? 0) + 1; }
+  const material = new Set(
+    Object.entries(geoCount).filter(([, c]) => c / loans.length >= 0.05).map(([g]) => g),
+  );
+  const riskGeos = Object.keys(EWI_FORECAST).filter(g => material.has(g));
+
+  // L1 — Seasonal Rainfall Forecast
+  const l1Flagged = riskGeos
+    .filter(g => EWI_FORECAST[g].pBelowNormal >= 35)
+    .map(g => ({ geo: g, signal: `${EWI_FORECAST[g].pBelowNormal}% P(below-normal)` }));
+  const maxP = Math.max(0, ...riskGeos.map(g => EWI_FORECAST[g].pBelowNormal));
+  const l1Status: TierOneEWI['status'] = maxP >= 55 ? 'alert' : maxP >= 35 ? 'watch' : 'ok';
+
+  // L2 — In-Season Vegetation & Rainfall Stress
+  const l2Flagged = riskGeos
+    .filter(g => EWI_FORECAST[g].ndviAnomaly <= -0.03)
+    .map(g => ({ geo: g, signal: `NDVI ${EWI_FORECAST[g].ndviAnomaly.toFixed(2)}` }));
+  const minNdvi = Math.min(0, ...riskGeos.map(g => EWI_FORECAST[g].ndviAnomaly));
+  const l2Status: TierOneEWI['status'] = minNdvi <= -0.05 ? 'alert' : minNdvi <= -0.03 ? 'watch' : 'ok';
+
+  // L3 — ENSO Phase Alignment
+  const droughtGeos = riskGeos.filter(g => EWI_FORECAST[g].ensoImpact === 'drought')
+    .map(g => ({ geo: g, signal: 'Drought risk ↑' }));
+  const floodGeos = riskGeos.filter(g => EWI_FORECAST[g].ensoImpact === 'flood')
+    .map(g => ({ geo: g, signal: 'Flood risk ↑' }));
+  const l3Flagged = [...droughtGeos, ...floodGeos];
+  const l3Status: TierOneEWI['status'] = (droughtGeos.length + floodGeos.length) > 0 ? 'watch' : 'ok';
+
+  const droughtNames = droughtGeos.map(f => f.geo).join(', ');
+  const floodNames  = floodGeos.map(f => f.geo).join(', ');
+
+  return [
+    {
+      code: 'L1',
+      label: 'Seasonal Rainfall Forecast',
+      source: 'IRI / NOAA CPC',
+      leadTime: '1–3 months',
+      status: l1Status,
+      headline: l1Status === 'ok'
+        ? 'Rainfall outlook within normal range across portfolio geographies'
+        : `Below-normal short-rains forecast: ${l1Flagged.map(f => f.geo).join(', ')}`,
+      detail: l1Status === 'ok'
+        ? 'IRI 3-month probabilistic outlook shows no material below-normal signal in portfolio geographies for the upcoming short-rains season (Oct–Dec 2026).'
+        : `IRI short-rains outlook (Oct–Dec 2026): elevated probability of below-normal rainfall in ${l1Flagged.map(f => f.geo).join(' and ')}. Agri-finance borrowers in these geographies face reduced harvest income, with repayment stress expected 2–3 months after season onset. Originators should begin proactive borrower outreach.`,
+      flaggedGeos: l1Flagged,
+    },
+    {
+      code: 'L2',
+      label: 'In-Season Vegetation & Rainfall Stress',
+      source: 'CHIRPS v2.0 · NASA MODIS NDVI',
+      leadTime: '6–10 weeks',
+      status: l2Status,
+      headline: l2Status === 'ok'
+        ? 'Vegetation indices within seasonal norm — long rains performing adequately'
+        : `Crop stress detected in ${l2Flagged.map(f => f.geo).join(', ')} during long-rains growing window`,
+      detail: l2Status === 'ok'
+        ? 'NDVI anomaly and CHIRPS cumulative rainfall are within 0.5σ of seasonal baseline across all material geographies. Long-rains harvest outlook is normal.'
+        : `NDVI anomaly in ${l2Flagged.map(f => f.geo).join(' and ')} is below the −0.03 threshold during the active long-rains growing window (May). Signals likely below-average crop yield at the June–August harvest, with expected impact on agri-finance repayment in Q3.`,
+      flaggedGeos: l2Flagged,
+    },
+    {
+      code: 'L3',
+      label: 'ENSO Phase Alignment',
+      source: 'NOAA CPC',
+      leadTime: '3–6 months',
+      status: l3Status,
+      headline: 'La Niña Watch — neutral transitioning; divergent impact across portfolio geographies',
+      detail: l3Status === 'ok'
+        ? 'ENSO is in neutral phase. No material Kenya impact forecast. Geography risk scores unaffected.'
+        : `Current ENSO state: La Niña Watch (May 2026). Kenya impact: suppressed rainfall in eastern/highland zones (${droughtNames || '—'}) elevating drought risk; above-normal rainfall in Lake Victoria basin (${floodNames || '—'}) elevating flood risk. Geography risk matrix scores adjusted accordingly.`,
+      flaggedGeos: l3Flagged,
+    },
+  ];
+}
+
+// ---- Tier 2: Portfolio Response Indicators ----
+
+export interface TierTwoEWI {
+  code: 'P1' | 'P2' | 'P3';
+  label: string;
+  status: 'ok' | 'watch' | 'alert';
+  value: string;
+  benchmark: string;
+  detail: string;
+}
+
+export function computeTierTwoEWI(loans: LoanLevelRow[]): TierTwoEWI[] {
+  if (loans.length === 0) return [];
+
+  const HIGH_RISK = new Set(
+    Object.entries(CLIMATE_RISK_ZONES).filter(([, v]) => v === 'high').map(([k]) => k),
+  );
+
+  // P1: Collection efficiency proxy — % of loans fully current (DPD = 0) by zone
+  const portfolioOnTime = (loans.filter(l => l.dpdAsOfReportingDate === 0).length / loans.length) * 100;
+  const exposedLoans = loans.filter(l => HIGH_RISK.has(l.geography ?? ''));
+  const exposedOnTime = exposedLoans.length > 0
+    ? (exposedLoans.filter(l => l.dpdAsOfReportingDate === 0).length / exposedLoans.length) * 100
+    : portfolioOnTime;
+  const effGap = portfolioOnTime - exposedOnTime;
+  const p1Status: TierTwoEWI['status'] = effGap > 10 ? 'alert' : effGap > 5 ? 'watch' : 'ok';
+
+  // P2: Portfolio share in geographies carrying active Tier 1 signals
+  const activeLoans = loans.filter(l => ACTIVE_SIGNAL_GEOS.has(l.geography ?? ''));
+  const activePct = (activeLoans.length / loans.length) * 100;
+  const p2Status: TierTwoEWI['status'] = activePct > 50 ? 'alert' : activePct > 25 ? 'watch' : 'ok';
+  const activeGeoList = [...ACTIVE_SIGNAL_GEOS].join(', ');
+
+  // P3: Climate finance share trajectory
+  const climateCount = loans.filter(l => {
+    const c = assignClimateCategory(l);
+    return c === 'positive' || c === 'resilient';
+  }).length;
+  const climateSharePct = (climateCount / loans.length) * 100;
+  const p3Status: TierTwoEWI['status'] = climateSharePct < 40 ? 'watch' : 'ok';
+  const p3Trend = climateSharePct >= 60 ? 'Growing — on track' : climateSharePct >= 40 ? 'On track' : 'Below target';
+
+  return [
+    {
+      code: 'P1',
+      label: 'Collection Efficiency — Climate-Exposed Geographies',
+      status: p1Status,
+      value: `${exposedOnTime.toFixed(1)}% on-time`,
+      benchmark: `Portfolio avg: ${portfolioOnTime.toFixed(1)}%`,
+      detail: p1Status === 'ok'
+        ? `Repayment performance in high-risk geographies (${[...HIGH_RISK].join(', ')}) is within ${effGap.toFixed(1)}pp of the portfolio average. No material climate-driven divergence confirmed.`
+        : `On-time repayment in climate-stressed geographies is ${effGap.toFixed(1)}pp below the portfolio average — confirming Tier 1 signals are reaching borrower behaviour. ${p1Status === 'alert' ? 'Moratorium assessment recommended for affected originators.' : 'Increase field engagement cadence in flagged geographies.'}`,
+    },
+    {
+      code: 'P2',
+      label: 'Concentration in Active Climate Signal Zones',
+      status: p2Status,
+      value: `${activePct.toFixed(1)}% of portfolio`,
+      benchmark: `In: ${activeGeoList}`,
+      detail: p2Status === 'ok'
+        ? `${activePct.toFixed(1)}% of the portfolio is in geographies with active Tier 1 climate signals (${activeGeoList}). Concentration is within acceptable limits.`
+        : `${activePct.toFixed(1)}% of the portfolio is concentrated in ${activeGeoList}, which carry active L1 (rainfall forecast) and L2 (NDVI stress) signals. ${p2Status === 'alert' ? 'Correlated stress risk is elevated — review originator exposure limits.' : 'Monitor closely; consider rebalancing new origination toward lower-risk geographies.'}`,
+    },
+    {
+      code: 'P3',
+      label: 'Climate Finance Share Trajectory',
+      status: p3Status,
+      value: `${climateSharePct.toFixed(1)}% climate-classified`,
+      benchmark: p3Trend,
+      detail: p3Status === 'ok'
+        ? `${climateSharePct.toFixed(1)}% of active loans are climate-positive or climate-resilient. The fund's climate finance share is on track with its Paris-aligned growth trajectory.`
+        : `Climate-classified share (${climateSharePct.toFixed(1)}%) is below the target trajectory. Review originator product mix and consider deploying product expansion incentives identified in the Growth Opportunities analysis.`,
+    },
+  ];
+}

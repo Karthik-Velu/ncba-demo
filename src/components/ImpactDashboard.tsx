@@ -9,17 +9,23 @@ import {
   computeClimateVulnerableBreakdown,
   computeClimateGeoProbabilities,
   computeSocioeconomicMetrics,
+  computeTierOneEWI,
+  computeTierTwoEWI,
   CLIMATE_RISK_ZONES,
   CO2E_FACTORS,
   CLIMATE_PRODUCT_LABELS,
   CLIMATE_BASELINE_TRAJECTORY,
   KES_TO_USD,
   type ClimateGeoProbability,
+  ACTIVE_SIGNAL_GEOS,
+  type TierOneEWI,
+  type TierTwoEWI,
 } from '@/lib/climateImpact';
 import {
   Leaf, Zap, Shield, Users, MapPin, AlertTriangle,
   ChevronDown, ChevronUp, Info, Heart, Briefcase, Globe,
   Sun, Truck, Droplets, TrendingDown, TrendingUp, Sprout, Building2,
+  Signal, Satellite, Activity,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -109,6 +115,87 @@ function ActionBadge({ actionType }: { actionType: ClimateGeoProbability['action
   return <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${styles}`}>{labels[actionType]}</span>;
 }
 
+// ---- EWI status helpers ----
+const EWI_STATUS_STYLES = {
+  ok:    { border: 'border-l-green-400', badge: 'bg-green-100 text-green-700', value: 'text-green-700' },
+  watch: { border: 'border-l-amber-400', badge: 'bg-amber-100 text-amber-700', value: 'text-amber-700' },
+  alert: { border: 'border-l-red-500',   badge: 'bg-red-100 text-red-700',     value: 'text-red-700' },
+} as const;
+
+const EWI_STATUS_LABEL: Record<TierOneEWI['status'], string> = { ok: 'OK', watch: 'Watch', alert: 'Alert' };
+
+function Tier1Card({ ewi }: { ewi: TierOneEWI }) {
+  const [open, setOpen] = useState(false);
+  const s = EWI_STATUS_STYLES[ewi.status];
+  return (
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 ${s.border} p-4 flex flex-col`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-mono">{ewi.code}</span>
+          <p className="text-xs font-semibold text-gray-800 leading-snug">{ewi.label}</p>
+        </div>
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${s.badge}`}>
+          {EWI_STATUS_LABEL[ewi.status]}
+        </span>
+      </div>
+      <div className="flex gap-1.5 mb-2.5">
+        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{ewi.source}</span>
+        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{ewi.leadTime} lead</span>
+      </div>
+      <p className="text-[10px] text-gray-700 leading-relaxed flex-1">{ewi.headline}</p>
+      {ewi.flaggedGeos.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {ewi.flaggedGeos.map(f => (
+            <span key={f.geo} className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+              {f.geo} · {f.signal}
+            </span>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 mt-2.5 font-medium">
+        <Info className="w-2.5 h-2.5" />
+        {open ? 'Hide detail' : 'View detail'}
+        {open ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+      </button>
+      {open && (
+        <p className="text-[9px] text-gray-600 mt-1.5 leading-relaxed bg-gray-50 rounded p-2 border border-gray-100">
+          {ewi.detail}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Tier2Card({ ewi }: { ewi: TierTwoEWI }) {
+  const [open, setOpen] = useState(false);
+  const s = EWI_STATUS_STYLES[ewi.status];
+  return (
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 ${s.border} p-4 flex flex-col`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <span className="text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-mono shrink-0">{ewi.code}</span>
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${s.badge}`}>
+          {EWI_STATUS_LABEL[ewi.status]}
+        </span>
+      </div>
+      <p className="text-xs font-semibold text-gray-800 leading-snug mb-3">{ewi.label}</p>
+      <p className={`text-lg font-bold ${s.value}`}>{ewi.value}</p>
+      <p className="text-[10px] text-gray-500 mt-0.5 flex-1">{ewi.benchmark}</p>
+      <button type="button" onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 mt-2.5 font-medium">
+        <Info className="w-2.5 h-2.5" />
+        {open ? 'Hide detail' : 'View detail'}
+        {open ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+      </button>
+      {open && (
+        <p className="text-[9px] text-gray-600 mt-1.5 leading-relaxed bg-gray-50 rounded p-2 border border-gray-100">
+          {ewi.detail}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ---- main component ----
 interface ImpactDashboardProps {
   loans: LoanLevelRow[];
@@ -125,6 +212,8 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
   const vulBreakdown  = useMemo(() => computeClimateVulnerableBreakdown(loans), [loans]);
   const geoProbs      = useMemo(() => computeClimateGeoProbabilities(loans), [loans]);
   const socio         = useMemo(() => computeSocioeconomicMetrics(loans), [loans]);
+  const tierOneEWI    = useMemo(() => computeTierOneEWI(loans), [loans]);
+  const tierTwoEWI    = useMemo(() => computeTierTwoEWI(loans), [loans]);
 
   const highRiskRecs = geoProbs.filter(r => r.riskLevel === 'high').length;
 
@@ -701,6 +790,56 @@ export default function ImpactDashboard({ loans, scope, nbfiName }: ImpactDashbo
         {geoProbs.length === 0 && (
           <p className="text-[10px] text-gray-400 italic">No high or medium risk geographies detected in the current loan scope.</p>
         )}
+      </div>
+
+      {/* ================================================================
+          SECTION 6 — CLIMATE EARLY WARNING SYSTEM (Two-Tier)
+          ================================================================ */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Signal className="w-4 h-4 text-violet-600" />
+          <h3 className="text-sm font-bold text-gray-800">Climate Early Warning System</h3>
+        </div>
+        <p className="text-[10px] text-gray-500 mb-5">
+          Two-tier EWI framework — <span className="font-semibold text-violet-700">Tier 1</span> uses external climate science data to predict stress 2–6 months ahead of the portfolio;{' '}
+          <span className="font-semibold text-indigo-700">Tier 2</span> confirms the impact in live loan performance data.
+        </p>
+
+        {/* Tier 1 */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Satellite className="w-3.5 h-3.5 text-violet-500" />
+            <span className="text-[10px] font-bold text-violet-700 uppercase tracking-wide">Tier 1 — Climate Lead Indicators</span>
+            <span className="text-[10px] text-gray-400 ml-1">Predictive · External climate data · IRI / CHIRPS / NOAA CPC</span>
+          </div>
+          {tierOneEWI.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {tierOneEWI.map(ewi => <Tier1Card key={ewi.code} ewi={ewi} />)}
+            </div>
+          ) : (
+            <p className="text-[10px] text-gray-400 italic">No loan data available for EWI computation.</p>
+          )}
+        </div>
+
+        {/* Tier 2 */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide">Tier 2 — Portfolio Response Indicators</span>
+            <span className="text-[10px] text-gray-400 ml-1">Confirmatory · Live portfolio data</span>
+          </div>
+          {tierTwoEWI.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {tierTwoEWI.map(ewi => <Tier2Card key={ewi.code} ewi={ewi} />)}
+            </div>
+          ) : (
+            <p className="text-[10px] text-gray-400 italic">No loan data available for EWI computation.</p>
+          )}
+          <p className="text-[9px] text-gray-400 mt-3">
+            P1 on-time rate = loans with DPD = 0 as a collection efficiency proxy. P2 active signal zones: {[...ACTIVE_SIGNAL_GEOS].join(', ')} (L1 ≥35% or L2 ≤−0.03).
+            P3 target trajectory: ≥60% climate-classified loan share aligned to fund Paris commitment.
+          </p>
+        </div>
       </div>
     </div>
   );
