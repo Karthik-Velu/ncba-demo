@@ -212,39 +212,43 @@ The matrix is visible to the guarantee provider at both the individual originato
 
 > **[REVISED]**
 
-## 4. Climate Growth Opportunities
+## 4. Climate Growth Opportunities: Identifying Supply Gaps
 
-For a Paris-aligned investor, enabling more climate finance to reach underserved markets is as central to the fund's mandate as managing climate risk within it. ki monitor serves both objectives: the risk management capabilities described in Sections 2 and 3 create the confidence needed to deploy more capital into climate-positive and resilient segments, while the growth intelligence capabilities described here identify where and how that capital can be deployed most effectively.
+For a Paris-aligned investor, expanding the reach of climate finance is as central to the mandate as managing its risks. ki monitor facilitates this without requiring massive external data acquisition. By cross-referencing the climate intelligence already generated for the Early Warning System with the fund's internal portfolio data, the platform identifies underserved geographies and borrower segments where the demand for climate lending outstrips current supply.
+
+Armed with this pragmatic, market-level intelligence, the investor can strategically source new originators or incentivize existing ones to deploy capital exactly where the climate impact is highest.
+
+### 4.1 Geographic Demand Mapping (Whitespace Analysis)
+
+Rather than mapping the entire continent, the platform identifies geographic "whitespaces" by looking for misalignments between climate suitability and current portfolio penetration.
+
+- **Agricultural Resilience Whitespaces**: The platform takes the Tier 1 EWS baseline data (which maps where rainfall is most reliable and drought risk is lowest) and overlays the fund's current agri-finance portfolio. Geographies that score as "Low Risk" in the Climate Risk Matrix but have less than 2% of the fund's deployed capital represent immediate, safe targets for scaling climate-resilient agri-finance.
+
+- **Off-Grid Energy Gaps**: To target Solar Home System (SHS) deployment, the platform cross-references basic, publicly available national electrification statistics (e.g., from the Ministry of Energy or the World Bank) with the portfolio map. Counties with grid access below 30% but zero SHS loans in the portfolio are flagged as primary supply gaps.
+
+- **Correlated Risk Relief**: Using the same ENSO forecasts used for risk management, the platform identifies regions that react differently to climate shocks than the fund's current core markets. Deploying capital into these geographically uncorrelated zones naturally hedges the existing portfolio.
+
+### 4.2 Segment-Level Climate Finance Needs
+
+The most efficient way to find a supply gap is to look within the existing, un-transitioned borrower base. ki monitor mines the existing loan-level data to identify segments primed for climate transition products.
+
+- **The E-Mobility Transition**: The platform scans the existing network's portfolio for traditional commercial transport loans (e.g., standard petrol boda-boda or 4WD asset finance). High concentrations of these traditional loans signal a captive, credit-proven market ready for Electric Vehicle (EV) transition financing.
+
+- **Agri-Product Deepening**: For originators already issuing general agricultural loans in medium-risk geographies (identified by the Risk Matrix), the platform flags an immediate supply gap for complementary adaptation products — specifically, the need to cross-sell drought-resistant seed financing or solar-irrigation equipment to their existing borrowers.
+
+- **Targeting Women Borrowers**: Using the demographic flags already required in standard loan reporting, the platform identifies regions where the current portfolio heavily skews male in the agricultural sector. This flags a structural supply gap, prompting the investor to seek out originators (like SACCOs or localised microfinance institutions) that specifically target women smallholder farmers in those exact counties.
+
+### 4.3 Intelligence-Led Originator Sourcing
+
+By clearly defining where and to whom climate finance needs to flow using simple, high-confidence data, ki monitor transforms how the guarantee provider approaches market growth.
+
+- **Targeted Originator Onboarding**: Instead of reviewing originators based solely on institutional size, the investor can actively seek out local originators that already possess physical branches in the specific "whitespace" counties identified by the platform.
+
+- **Product Mandates for Existing Originators**: Where the platform identifies a segment-level gap (e.g., high petrol boda-boda loans but zero EV loans), the investor can use this data to confidently structure product-specific deployment incentives or technical assistance for that specific originator.
+
+- **Impact-per-Dollar Optimisation**: This approach allows the guarantee provider to prioritise capital allocation toward the combinations of geography and product that yield the highest CO₂e avoided or the greatest resilience built, without relying on complex, unproven proxy data.
 
 > **[END REVISED]**
-
-### 4.1 New Originator Identification
-
-The platform tracks climate product demand signals across geographies — identifying counties and borrower segments where demand for EV finance, solar home systems, and climate-resilient agri credit is unmet by any originator in the current network. These signals include:
-
-- Geographic whitespace analysis: high-density rural populations in low-to-medium climate-risk zones not served by any current network originator
-- Borrower-level climate product take-up rates in comparable geographies, used to project demand in unserved areas
-- Concentration risk relief: introducing new originators in geographies that are currently under-represented in the network reduces systemic correlated climate exposure
-
-This enables the fund to grow its originator base in a climate-aligned way — prioritising onboarding of originators that serve underpenetrated segments where the climate opportunity is highest and portfolio correlation risk is lowest.
-
-### 4.2 Product Expansion for Existing Originators
-
-For originators already in the network, ki monitor surfaces signals indicating which of their existing borrower populations are ready to transition to or expand into climate-positive products:
-
-- **EV and e-boda upsell signals**: originators with existing transport-sector borrowers (petrol boda-boda, personal transport) are identified as candidates for EV loan product launch; historic repayment profiles validate credit worthiness for the asset type
-- **Solar home system cross-sell**: originators serving rural borrowers in energy-poor counties (measured by low grid connection proxies) are flagged as candidates for solar home system product deployment
-- **Agri-resilient product deepening**: originators with agri-finance books in medium-risk geographies are prompted to expand crop-cycle aligned disbursements and consider bundled crop-insurance products
-
-Product expansion within the existing network is typically the fastest route to increasing the fund's climate finance share — because the originator relationship, credit infrastructure, and borrower data already exist.
-
-### 4.3 Capital Deployment Targeting
-
-For the guarantee provider and fund manager, ki monitor generates a capital deployment opportunity view across the network:
-
-- **Under-deployed originators in low-risk geographies**: where climate risk is low, originator capacity exists, and the climate product mix is expanding — these originators are candidates for increased facility drawdown
-- **Climate finance share headroom**: at the fund level, the platform tracks actual vs. target climate finance share (% of portfolio balance under MDB Common Principles) and shows which originator-product combinations can most efficiently close the gap
-- **Impact-per-dollar efficiency**: ranks deployment opportunities by CO₂e avoided per USD deployed, crop-cycle alignment rate, and women-borrower reach — enabling the guarantee provider to assess whether capital is flowing to highest-impact applications
 
 ---
 
