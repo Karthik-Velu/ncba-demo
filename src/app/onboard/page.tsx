@@ -49,14 +49,14 @@ export default function OnboardPage() {
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">Onboard New NBFI</h1>
+              <h1 className="text-xl font-bold text-gray-800">Onboard New Originator</h1>
               <p className="text-sm text-gray-500">Provide basic information about the originator</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">NBFI Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Originator Name *</label>
               <input
                 type="text"
                 value={form.name}

@@ -16,7 +16,7 @@ import KaleidofinLogo from './KaleidofinLogo';
 const DEMO_USERS = [
   { role: 'analyst' as const, name: 'Sarah Kimani', label: 'Credit Analyst' },
   { role: 'approver' as const, name: 'James Ochieng', label: 'Senior Approver' },
-  { role: 'nbfi_user' as const, name: 'Alice Wanjiku', label: 'NBFI Partner' },
+  { role: 'nbfi_user' as const, name: 'Alice Wanjiku', label: 'Originator Partner' },
 ];
 
 export default function Sidebar() {
@@ -48,7 +48,7 @@ export default function Sidebar() {
 function GlobalSidebar({ pathname, user, logout }: { pathname: string; user: { name: string; role: string }; logout: () => void }) {
   const links = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/onboard', label: 'Onboard NBFI', icon: UserPlus },
+    { href: '/onboard', label: 'Onboard Originator', icon: UserPlus },
   ];
 
   return (

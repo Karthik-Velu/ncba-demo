@@ -100,6 +100,12 @@ export default function MonitoringPage() {
   const id = params.id as string;
   const [scope, setScope] = useState<MonScope>('transaction');
   const [activeTab, setActiveTab] = useState<MonTab>('risk');
+
+  // Initialise scope from URL query param (?scope=portfolio etc.) on first mount
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get('scope');
+    if (s === 'portfolio' || s === 'nbfi' || s === 'transaction') setScope(s);
+  }, []);
   const [viewMode, setViewMode] = useState<'overall' | 'security_package'>('overall');
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('12M');
   const [filterProduct, setFilterProduct] = useState<string[]>([]);
@@ -240,13 +246,13 @@ export default function MonitoringPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-800">Risk Monitoring Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `NBFI: ${nbfi.name} (${nbfiTxIds.length} transaction${nbfiTxIds.length > 1 ? 's' : ''})` : 'Full Portfolio'}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{scope === 'transaction' ? `Transaction: ${nbfi.name}` : scope === 'nbfi' ? `Originator: ${nbfi.name} (${nbfiTxIds.length} transaction${nbfiTxIds.length > 1 ? 's' : ''})` : 'Full Portfolio'}</p>
           </div>
           <button type="button" onClick={handleExport} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"><Download className="w-4 h-4" /> Export CSV</button>
         </div>
         <div className="flex items-center gap-4 mb-4">
           <div className="flex bg-gray-100 p-1 rounded-lg">
-            {([{ key: 'transaction' as const, label: 'Transaction', icon: Target }, { key: 'nbfi' as const, label: 'NBFI', icon: Building2 }, { key: 'portfolio' as const, label: 'Portfolio', icon: Layers }]).map(({ key, label, icon: Icon }) => (
+            {([{ key: 'transaction' as const, label: 'Transaction', icon: Target }, { key: 'nbfi' as const, label: 'Originator', icon: Building2 }, { key: 'portfolio' as const, label: 'Portfolio', icon: Layers }]).map(({ key, label, icon: Icon }) => (
               <button key={key} onClick={() => setScope(key)} className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${scope === key ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Icon className="w-3.5 h-3.5" /> {label}</button>
             ))}
           </div>
@@ -474,8 +480,8 @@ export default function MonitoringPage() {
 
           {scope === 'portfolio' && riskRanking.length > 0 && (<>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
-              <h2 className="text-sm font-bold text-[#003366] mb-3">NBFI Performance Breakdown</h2>
-              <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-3 py-2">NBFI</th><th className="text-right px-3 py-2">Loans</th><th className="text-right px-3 py-2">Balance</th><th className="text-right px-3 py-2">PAR 90+</th><th className="text-right px-3 py-2">NPL</th><th className="text-right px-3 py-2">Gross Loss</th><th className="text-right px-3 py-2">Provisions</th><th className="text-right px-3 py-2">Est Loss</th><th className="text-left px-3 py-2">Status</th></tr></thead>
+              <h2 className="text-sm font-bold text-[#003366] mb-3">Originator Performance Breakdown</h2>
+              <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b text-gray-500 uppercase"><th className="text-left px-3 py-2">Originator</th><th className="text-right px-3 py-2">Loans</th><th className="text-right px-3 py-2">Balance</th><th className="text-right px-3 py-2">PAR 90+</th><th className="text-right px-3 py-2">NPL</th><th className="text-right px-3 py-2">Gross Loss</th><th className="text-right px-3 py-2">Provisions</th><th className="text-right px-3 py-2">Est Loss</th><th className="text-left px-3 py-2">Status</th></tr></thead>
               <tbody>{riskRanking.map(r => (<tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50"><td className="px-3 py-2 font-medium"><Link href={`/nbfi/${r.id}/monitoring`} className="text-[#003366] hover:underline">{r.name}</Link></td><td className="px-3 py-2 text-right">{r.loans.toLocaleString()}</td><td className="px-3 py-2 text-right font-mono">{fmt(r.bal)}</td><td className={`px-3 py-2 text-right ${r.par90 > 5 ? 'text-red-600 font-semibold' : ''}`}>{pct(r.par90)}</td><td className={`px-3 py-2 text-right ${r.nplRatio > 5 ? 'text-red-600 font-semibold' : ''}`}>{pct(r.nplRatio)}</td><td className="px-3 py-2 text-right font-mono">{fmt(r.grossLoss)}</td><td className="px-3 py-2 text-right font-mono">{fmt(r.provisions)}</td><td className={`px-3 py-2 text-right ${r.lossRate > 10 ? 'text-red-600 font-semibold' : ''}`}>{pct(r.lossRate)}</td><td className="px-3 py-2"><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.status === 'monitoring' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{r.status.replace(/_/g, ' ')}</span></td></tr>))}</tbody></table></div>
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
